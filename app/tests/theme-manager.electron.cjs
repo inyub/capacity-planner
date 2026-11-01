@@ -100,15 +100,19 @@ if (!process.versions.electron) {
         await click('.settings-open')
         await waitFor('!!document.querySelector(".settings-dialog[open]")')
       }
-      await click('.settings-theme-edit')
-      await waitFor('!!document.querySelector(".theme-dialog[open]")')
+      await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     }
     const save = async () => {
       await click('.theme-save')
-      await waitFor('!document.querySelector(".theme-dialog")')
+      await waitFor('!!document.querySelector(".theme-saved")')
       await pause(50)
     }
-    const select = (id) => click(`[data-theme-id="${id}"]`)
+    const select = async (id) => {
+      await js(
+        `(()=>{const el=document.querySelector('.theme-select');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,${JSON.stringify(id)});el.dispatchEvent(new Event('change',{bubbles:true}))})()`
+      )
+      await pause()
+    }
     await waitFor('document.querySelectorAll("[data-card-id]").length === 14')
     win.focus()
     if (phase === 'manual') {
@@ -121,14 +125,14 @@ if (!process.versions.electron) {
       return
     }
     if (phase === 'recovery') {
-      assert.equal(await css('header'), '#302848')
+      assert.equal(await css('header'), '#252332')
       assert.equal(await js('document.querySelectorAll("[data-card-id]").length'), 14)
       assert.equal(
         await js('document.querySelector("[data-card-id=Card-0] .card-title").textContent'),
         'Buchsatz'
       )
       await open()
-      assert.equal(await js('document.querySelectorAll(".theme-preset").length'), 8)
+      assert.equal(await js('document.querySelectorAll(".theme-select option").length'), 8)
       console.log('PASS: damaged appearance falls back to Space without losing planning data')
       win.close()
       return
@@ -137,13 +141,16 @@ if (!process.versions.electron) {
       const expected = JSON.parse(fs.readFileSync(path.join(profile, 'expected.json'), 'utf8'))
       assert.deepEqual(read().cards, expected.cards)
       assert.deepEqual(read().appearance, expected.appearance)
-      assert.equal(await css('header'), '#402633')
+      assert.equal(await css('header'), '#332127')
       await open()
-      assert.equal(await js('document.querySelectorAll(".theme-preset").length'), 8)
-      assert.equal(await js('!!document.querySelector("[data-theme-id=fl-studio]")'), false)
+      assert.equal(await js('document.querySelectorAll(".theme-select option").length'), 8)
+      assert.equal(
+        await js('!!document.querySelector(".theme-select option[value=fl-studio]")'),
+        false
+      )
       assert.equal(
         await js(
-          '[...document.querySelectorAll(".theme-preset")].some(el=>el.textContent.includes("Mein Theme"))'
+          '[...document.querySelectorAll(".theme-select option")].some(el=>el.textContent.includes("Mein Theme"))'
         ),
         true
       )
@@ -154,7 +161,7 @@ if (!process.versions.electron) {
       return
     }
 
-    assert.equal(await css('header'), '#302848')
+    assert.equal(await css('header'), '#252332')
     assert.equal(read().appearance, undefined)
     let menus = 0
     // Verify native Windows non-client wiring without blocking the automated test in a popup.
@@ -174,31 +181,27 @@ if (!process.versions.electron) {
       { x: 100, y: 30 }
     )
     await waitFor('!!document.querySelector(".settings-dialog[open]")')
-    await click('.settings-theme-edit')
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     assert.equal(prevented, true)
     assert.equal(menus, 1)
-    assert.equal(await js('document.querySelectorAll(".theme-preset").length'), 8)
+    assert.equal(await js('document.querySelectorAll(".theme-select option").length'), 8)
     await select('blender')
-    assert.equal(await css('header'), '#303030')
+    assert.equal(await css('header'), '#2c2a28')
     assert.equal(read().appearance, undefined)
     await fill('color-card', '#123456')
     assert.equal(await css('card'), '#123456')
     await fill('color-card', '#oops')
     assert.equal(await js('document.querySelector(".theme-save").disabled'), true)
     await key('Escape')
-    await waitFor('!document.querySelector(".theme-dialog")')
-    assert.equal(await css('header'), '#302848')
-    assert.equal(await css('card'), '#4c456d')
-    assert.equal(read().appearance, undefined)
-    await key('Escape')
     await waitFor('!document.querySelector(".settings-dialog")')
+    assert.equal(await css('header'), '#252332')
+    assert.equal(await css('card'), '#3d375a')
+    assert.equal(read().appearance, undefined)
     await js(
       'document.querySelector(".planner-header").dispatchEvent(new MouseEvent("contextmenu",{bubbles:true,cancelable:true}))'
     )
     await waitFor('!!document.querySelector(".settings-dialog[open]")')
-    await click('.settings-theme-edit')
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     assert.equal(menus, 2)
     for (const id of [
       'blender',
@@ -225,11 +228,9 @@ if (!process.versions.electron) {
     await select('space')
     await fill('color-card', '#123456')
     await click('.theme-reset')
-    assert.equal(await css('card'), '#4c456d')
+    assert.equal(await css('card'), '#3d375a')
     await click('.theme-duplicate')
-    const customId = await js(
-      'document.querySelector(".theme-preset[aria-pressed=true]").dataset.themeId'
-    )
+    const customId = await js('document.querySelector(".theme-select").value')
     assert.match(customId, /^[a-f0-9-]{36}$/)
     await fill('theme-name', 'Mein Theme')
     await fill('color-card', '#123456')
@@ -237,10 +238,9 @@ if (!process.versions.electron) {
     assert.equal(read().appearance.activeId, customId)
     assert.equal(read().appearance.themes.length, 9)
     assert.equal(await css('card'), '#123456')
-    assert.equal(await js('document.activeElement.classList.contains("settings-theme-edit")'), true)
-    await open()
+    assert.equal(await js('!!document.querySelector(".settings-dialog[open]")'), true)
     await click('.theme-reset')
-    assert.equal(await css('card'), '#4c456d')
+    assert.equal(await css('card'), '#3d375a')
     await key('Escape')
     assert.equal(await css('card'), '#123456')
     await open()
@@ -248,11 +248,14 @@ if (!process.versions.electron) {
     await click('.theme-delete')
     await waitFor('!!document.querySelector(".theme-delete-dialog[open]")')
     await key('Escape')
-    assert.equal(await js('!!document.querySelector(".theme-dialog[open]")'), true)
+    assert.equal(await js('!!document.querySelector(".settings-dialog[open]")'), true)
     assert.equal(await js('!!document.querySelector(".theme-delete-dialog[open]")'), false)
     await click('.theme-delete')
     await click('.theme-delete-dialog .confirm-delete')
-    assert.equal(await js('!!document.querySelector("[data-theme-id=fl-studio]")'), false)
+    assert.equal(
+      await js('!!document.querySelector(".theme-select option[value=fl-studio]")'),
+      false
+    )
     assert.equal(read().appearance.themes.length, 9)
     await select(customId)
     await save()
@@ -271,7 +274,7 @@ if (!process.versions.electron) {
     await click('.theme-save')
     await waitFor('!!document.querySelector(".theme-actions [role=alert]")')
     assert.equal(read().appearance.activeId, customId)
-    assert.equal(await css('header'), '#402633')
+    assert.equal(await css('header'), '#332127')
     fs.rmdirSync(path.join(profile, 'data.json.tmp'))
     await key('Escape')
     assert.equal(await css('card'), '#123456')
@@ -279,7 +282,7 @@ if (!process.versions.electron) {
     await select('crimson')
     await save()
     assert.equal(read().appearance.activeId, 'crimson')
-    assert.equal(await css('header'), '#402633')
+    assert.equal(await css('header'), '#332127')
     await click('[data-card-id=Card-0] .description-toggle')
     await pause(400)
     assert.equal(read().appearance.activeId, 'crimson')
@@ -299,18 +302,25 @@ if (!process.versions.electron) {
     await waitFor('!document.querySelector(".settings-dialog")')
     await js('document.querySelector(".settings-open").focus()')
     await key(',', ['control'])
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     await js('document.querySelector(".theme-save").focus()')
     await key('Tab')
-    assert.equal(await js('!!document.activeElement.closest(".theme-dialog")'), true)
+    assert.equal(await js('!!document.activeElement.closest(".settings-dialog")'), true)
+    await select('blender')
+    await js('document.querySelector(".theme-select").focus()')
     await key('Enter', ['control'])
-    await waitFor('!document.querySelector(".theme-dialog")')
+    await waitFor('!!document.querySelector(".theme-saved")')
+    assert.equal(read().appearance.activeId, 'blender')
+    await select('crimson')
+    await save()
+    assert.equal(read().appearance.activeId, 'crimson')
+    assert.equal(await js('!!document.querySelector(".settings-dialog[open]")'), true)
     win.setSize(960, 620)
     await pause(400)
     await open()
     assert.equal(
       await js(
-        `(()=>{const d=document.querySelector('.theme-dialog').getBoundingClientRect();return d.top>=0&&d.left>=0&&d.bottom<=innerHeight&&d.right<=innerWidth})()`
+        `(()=>{const d=document.querySelector('.settings-dialog').getBoundingClientRect();return d.top>=0&&d.left>=0&&d.bottom<=innerHeight&&d.right<=innerWidth})()`
       ),
       true
     )

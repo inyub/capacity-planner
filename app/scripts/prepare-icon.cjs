@@ -51,7 +51,9 @@ if (!process.versions.electron) {
         header.writeUInt32LE(offset, entry + 12)
         offset += images[index].length
       })
-      fs.writeFileSync(path.join(root, 'build/icon.ico'), Buffer.concat([header, ...images]))
+      const ico = Buffer.concat([header, ...images])
+      fs.writeFileSync(path.join(root, 'build/icon.ico'), ico)
+      fs.writeFileSync(path.join(root, 'resources/icon.ico'), ico)
       fs.copyFileSync(source, path.join(root, 'build/icon.png'))
       fs.copyFileSync(source, path.join(root, 'resources/icon.png'))
       console.log(

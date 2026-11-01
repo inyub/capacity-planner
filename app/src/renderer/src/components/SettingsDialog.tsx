@@ -8,7 +8,6 @@ type SettingsView = 'themes' | 'data' | 'updates'
 
 export function SettingsDialog({
   initialView = 'themes',
-  openThemeEditor = false,
   initialTheme,
   busy: appBusy,
   onImported,
@@ -16,7 +15,6 @@ export function SettingsDialog({
   onClose
 }: {
   initialView?: SettingsView
-  openThemeEditor?: boolean
   initialTheme?: ThemeState
   busy: boolean
   onImported: (data: AppData) => void
@@ -24,12 +22,10 @@ export function SettingsDialog({
   onClose: () => void
 }): React.JSX.Element {
   const [view, setView] = useState<SettingsView>(initialView)
-  const [themeVisible, setThemeVisible] = useState(openThemeEditor)
   const [transferBusy, setTransferBusy] = useState(false)
   const [updateBusy, setUpdateBusy] = useState(false)
   const busy = appBusy || transferBusy || updateBusy
   const dialogRef = useRef<HTMLDialogElement>(null)
-  const themeButtonRef = useRef<HTMLButtonElement>(null)
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current
@@ -62,18 +58,17 @@ export function SettingsDialog({
         close()
       }}
       onKeyDown={(event) => {
-        if (!busy && !themeVisible && (event.ctrlKey || event.metaKey) && event.key === ',') {
+        if (!busy && (event.ctrlKey || event.metaKey) && event.key === ',') {
           event.preventDefault()
           event.stopPropagation()
           setView('themes')
-          setThemeVisible(true)
         }
       }}
     >
       <div className="settings-heading">
         <div>
           <h2 id="settings-title">Einstellungen</h2>
-          <p>Ansicht und Darstellung deiner Planung.</p>
+          <p>Themes, Daten und Updates deiner Planung.</p>
         </div>
         <button
           className="theme-close settings-close"
@@ -103,7 +98,6 @@ export function SettingsDialog({
             aria-current={view === 'data' ? 'page' : undefined}
             onClick={() => {
               setView('data')
-              setThemeVisible(false)
             }}
             disabled={busy}
           >
@@ -116,42 +110,21 @@ export function SettingsDialog({
             disabled={busy}
             onClick={() => {
               setView('updates')
-              setThemeVisible(false)
             }}
           >
             Updates
           </button>
         </nav>
         <section className="settings-content" aria-live="polite">
-          {view === 'updates' ? (
-            <UpdateSettings onBusy={setUpdateBusy} />
-          ) : view === 'data' ? (
+          <ThemeManager
+            hidden={view !== 'themes'}
+            initial={initialTheme}
+            busy={busy}
+            onSave={onSaveTheme}
+          />
+          {view === 'updates' && <UpdateSettings onBusy={setUpdateBusy} />}
+          {view === 'data' && (
             <PlanningDataSettings onImported={onImported} onBusy={setTransferBusy} />
-          ) : (
-            <div className="settings-theme-entry">
-              <h3>Themes</h3>
-              <p>Farben und Vorschau der Jahresansicht bearbeiten.</p>
-              <button
-                ref={themeButtonRef}
-                type="button"
-                className="theme-button settings-theme-edit"
-                onClick={() => setThemeVisible(true)}
-                disabled={busy}
-              >
-                Themes bearbeiten
-              </button>
-              {themeVisible && (
-                <ThemeManager
-                  initial={initialTheme}
-                  busy={busy}
-                  onSave={onSaveTheme}
-                  onClose={() => {
-                    setThemeVisible(false)
-                    themeButtonRef.current?.focus({ preventScroll: true })
-                  }}
-                />
-              )}
-            </div>
           )}
         </section>
       </div>

@@ -1,6 +1,23 @@
 @import './base.css';
 @import './themes.css';
 
+:root {
+  --radius: 10px;
+  --radius-control: 8px;
+  --radius-small: 6px;
+  /* Shared 4px grid for cards and the card form. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --card-inset: var(--space-3);
+  --control-height: 28px;
+  --select-width: 64px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -8,7 +25,8 @@
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--line-light);
-  border-radius: 7px;
+  /* Square on purpose: the OS rounds the window, a CSS curve would double it. */
+  border-radius: 0;
   background: var(--canvas);
 }
 
@@ -36,7 +54,7 @@
   margin: 0;
   padding: 0 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -45,17 +63,13 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
+  -webkit-app-region: no-drag;
 }
 .selected-year:hover {
   background: var(--header-highlight);
 }
 .year-picker {
   position: relative;
-}
-.year-picker-chevron {
-  margin-left: 5px;
-  color: var(--accent);
-  font-size: 14px;
 }
 .year-menu {
   position: absolute;
@@ -70,13 +84,13 @@
   padding: 4px;
   transform: translateX(-50%);
   border: 1px solid var(--line-light);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: var(--surface-dark);
   box-shadow: 0 8px 20px var(--line);
 }
 .year-menu button {
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   padding: 6px 10px;
   background: transparent;
   color: var(--text);
@@ -96,7 +110,7 @@
   place-items: center;
   padding: 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
@@ -181,7 +195,6 @@
   scrollbar-color: var(--scrollbar) transparent;
   scrollbar-width: thin;
   overscroll-behavior-y: contain;
-  scrollbar-gutter: stable;
 }
 .month-footer {
   min-height: var(--month-footer-height);
@@ -190,10 +203,10 @@
   background: linear-gradient(180deg, var(--surface-dark-highlight), var(--surface-dark));
 }
 .planner-card {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: linear-gradient(135deg, var(--card-highlight), var(--card));
   box-shadow: 0 2px 4px var(--line);
   overflow-wrap: anywhere;
@@ -202,9 +215,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  min-height: 28px;
-  padding: 2px 5px 2px 10px;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 2px var(--space-1) 2px var(--card-inset);
   background: linear-gradient(115deg, var(--header), var(--field));
 }
 .sortable-card {
@@ -239,7 +252,7 @@
 .card-label {
   min-width: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 .card-settings,
 .description-toggle {
@@ -250,7 +263,7 @@
   place-items: center;
   padding: 3px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   background: transparent;
   color: var(--text);
 }
@@ -279,26 +292,27 @@
   fill: currentColor;
 }
 .card-body {
-  padding: 0 10px;
+  padding: 0 var(--card-inset);
 }
 .card-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  min-height: 29px;
+  gap: var(--space-2);
+  min-height: 32px;
   border-bottom: 1px solid var(--muted);
 }
 .card-title {
   min-width: 0;
-  margin: 4px 0;
-  font-size: 14px;
+  margin: var(--space-1) 0;
+  font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.3;
 }
 .description-toggle {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
   color: var(--card);
   background: var(--text);
   cursor: pointer;
@@ -307,27 +321,27 @@
   background: var(--accent-strong);
 }
 .card-description {
-  padding: 8px 0;
+  padding: var(--space-2) 0;
   border-bottom: 1px solid var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   line-height: 1.35;
 }
 .description-label {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 .card-description ul {
-  margin: 2px 0 0;
-  padding-left: 20px;
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
 }
 .card-values {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 4px 8px;
-  padding: 8px 0;
-  font-size: 12px;
+  gap: var(--space-1) var(--space-2);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -337,16 +351,17 @@
 }
 .add-card {
   display: grid;
+  position: relative;
   width: 100%;
-  height: 48px;
+  height: 52px;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--muted);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--card-highlight), var(--card));
-  color: var(--text);
-  font-size: 38px;
-  font-weight: 600;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1;
   opacity: 0;
   pointer-events: none;
@@ -371,6 +386,21 @@
   font-size: 12px;
   -webkit-app-region: no-drag;
 }
+.year-revenue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.year-revenue-label {
+  color: var(--muted);
+}
+.year-revenue span:not(.year-revenue-label) {
+  color: var(--text);
+  font-weight: 600;
+}
 .view-toolbar input {
   width: 180px;
   accent-color: var(--accent);
@@ -389,7 +419,7 @@
   min-height: 32px;
   padding: 4px 10px;
   border: 1px solid var(--line-light);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   background: var(--field);
   color: var(--text);
   cursor: pointer;
@@ -402,31 +432,50 @@
   cursor: default;
 }
 
+/* The whole row is the click area; the small circle marks the plus sign. */
+.add-card::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--line-light);
+  border-radius: 50%;
+}
 .add-card:hover {
+  color: var(--text);
+  background: linear-gradient(135deg, var(--card-highlight), var(--card));
+}
+.add-card:hover::before {
   border-color: var(--accent-strong);
 }
 .card-form {
   border-color: var(--muted);
-  padding: 8px;
 }
+/* The heading band and insets mirror .card-header and .card-body. */
 .form-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 24px;
-  margin-bottom: 6px;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 2px var(--space-1) 2px var(--card-inset);
+  background: linear-gradient(115deg, var(--header), var(--field));
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 .form-close {
   width: 24px;
   height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   background: transparent;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
+  line-height: 1;
 }
 .form-close:hover {
   background: var(--field);
@@ -434,18 +483,18 @@
 .card-form fieldset {
   min-width: 0;
   margin: 0;
-  padding: 0;
+  padding: var(--space-2) var(--card-inset) var(--space-3);
   border: 0;
 }
 .form-field {
   min-width: 0;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 .form-field label {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: var(--space-1);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-xs);
 }
 .form-field input,
 .form-field textarea,
@@ -453,21 +502,48 @@
   display: block;
   width: 100%;
   min-width: 0;
-  padding: 5px 4px;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
   border: 1px solid var(--line-light);
-  border-radius: 3px;
-  background: var(--field);
+  border-radius: var(--radius-small);
+  background-color: var(--field);
   color: var(--text);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-sm);
+}
+.form-field input,
+.form-field select {
+  height: var(--control-height);
 }
 .form-field textarea {
   resize: vertical;
   min-height: 60px;
+  line-height: 1.35;
 }
+/* Own chevron drawn from two gradients so it follows the theme's muted colour. */
 .form-field select {
-  padding-left: 2px;
-  padding-right: 0;
+  padding-right: 22px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.form-field select:hover:enabled {
+  border-color: var(--accent);
+}
+.form-field select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.form-field select option {
+  background: var(--field);
+  color: var(--text);
 }
 .form-field input:focus-visible,
 .form-field textarea:focus-visible,
@@ -478,12 +554,16 @@
 .form-field [aria-invalid='true'] {
   border-color: var(--danger);
 }
+/* Time | unit, revenue | currency: both selects share one column. */
 .form-numbers {
   display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) 56px;
-  gap: 5px;
-  padding-top: 8px;
+  grid-template-columns: minmax(0, 1fr) var(--select-width);
+  gap: var(--space-2);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--muted);
+}
+.form-time {
+  display: contents;
 }
 .form-numbers .form-field {
   margin-bottom: 0;
@@ -491,23 +571,28 @@
 .field-error,
 .form-error {
   display: block;
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   color: var(--danger);
-  font-size: 11px;
+  font-size: var(--text-xs);
   line-height: 1.35;
 }
+.form-error {
+  margin: 0;
+  padding: 0 var(--card-inset) var(--space-3);
+}
 .form-hint {
-  margin: 6px 0 10px;
+  margin: var(--space-2) 0 var(--space-3);
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--text-xs);
+  line-height: 1.35;
 }
 .save-card {
   width: 100%;
   min-height: 32px;
   border: 1px solid var(--accent);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   background: linear-gradient(135deg, var(--card-highlight), var(--card));
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }
@@ -524,12 +609,12 @@ button:disabled {
 }
 .secondary-action {
   display: block;
-  margin: 6px auto 0;
-  padding: 5px 10px;
+  margin: var(--space-1) auto 0;
+  padding: var(--space-1) var(--space-2);
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-sm);
   cursor: pointer;
 }
 .secondary-action:hover {
@@ -542,7 +627,7 @@ button:disabled {
   width: min(360px, calc(100vw - 40px));
   padding: 20px;
   border: 1px solid var(--line-light);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: linear-gradient(135deg, var(--header-highlight), var(--header));
   color: var(--text);
   overflow-wrap: anywhere;
@@ -569,7 +654,7 @@ button:disabled {
 .dialog-actions button {
   padding: 7px 12px;
   border: 1px solid var(--line-light);
-  border-radius: 4px;
+  border-radius: var(--radius-small);
   background: var(--field);
   cursor: pointer;
 }
@@ -646,28 +731,11 @@ button:disabled {
   .month-revenue {
     margin-left: auto;
   }
-  .form-numbers {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .form-numbers > .form-field:last-child {
-    grid-column: 1 / -1;
-    max-width: 80px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .header-control {
     transition: none;
   }
-}
-
-.form-time {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr) 64px;
-  gap: 5px;
-}
-.form-numbers > .form-field:nth-child(2) {
-  grid-column: 1 / 3;
 }
 
 .total-time {
@@ -697,7 +765,7 @@ button:disabled {
 }
 .planning-preview {
   border: 1px solid var(--line-light);
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 14px;
   background: var(--surface-dark);
 }

@@ -106,11 +106,14 @@ function createWindow(): void {
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,
     frame: false,
+    // Windows 11 rounds the corners natively; the shell draws no second curve.
+    roundedCorners: true,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#17131f',
+    backgroundColor: '#252331',
     title: 'Capacity Planner',
-    icon: join(__dirname, '../../resources/icon.png'),
+    // Windows takes its taskbar icon from this file; the ICO carries the native sizes.
+    icon: join(__dirname, `../../resources/icon.${process.platform === 'win32' ? 'ico' : 'png'}`),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
@@ -231,6 +234,28 @@ ipcMain.handle('window:toggle-maximize', () => {
 ipcMain.handle('window:toggle-fullscreen', () => {
   if (mainWindow) mainWindow.setFullScreen(!mainWindow.isFullScreen())
 })
+// Upper bound for the renderer's width limit; it is derived from the twelve columns there.
+const MAX_WINDOW_WIDTH_LIMIT = 8192
+ipcMain.handle('window:width-limit', (_event, value: unknown) => {
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < MIN_WIDTH ||
+    value > MAX_WINDOW_WIDTH_LIMIT
+  )
+    throw new Error('Ungültige Fensterbreite.')
+  applyWindowWidthLimit(value)
+})
+function applyWindowWidthLimit(width: number): void {
+  const window = mainWindow
+  if (!window || window.isDestroyed()) return
+  const { workArea } = screen.getDisplayMatching(window.getBounds())
+  window.setMaximumSize(width, workArea.height)
+  // A narrower limit must also shrink a window that is already wider.
+  if (!window.isMaximized() && !window.isFullScreen() && window.getBounds().width > width) {
+    window.setSize(width, window.getBounds().height)
+  }
+}
 function showHeaderMenu(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return
   Menu.buildFromTemplate([

@@ -11,15 +11,22 @@ import { YearBoard } from './components/YearBoard'
 import { moveCard } from '../../shared/card-order'
 import type { CardFields } from './components/CardForm'
 import { SettingsDialog } from './components/SettingsDialog'
-import { activeTheme } from '../../shared/themes'
+import { activeTheme, upgradePresetThemes } from '../../shared/themes'
 import { applyTheme } from './applyTheme'
 import { readStoredYear } from './year'
 import { COLUMN_WIDTH_KEY, readColumnWidth } from './viewPreferences'
 import { ViewToolbar } from './components/ViewToolbar'
 import { useKeyboardNavigation } from './useKeyboardNavigation'
+import { useViewPositionStore } from './useViewPosition'
+import { monthTotals } from '../../shared/totals'
+import { yearBoardWidth } from '../../shared/window-width'
+
+// A trackpad or wheel gesture sends many events; a pause this long starts a new gesture.
+const WHEEL_GESTURE_GAP_MS = 300
 
 function App(): React.JSX.Element {
   useKeyboardNavigation()
+  const viewPosition = useViewPositionStore()
   const [columnWidth, setColumnWidth] = useState(() => {
     try {
       return readColumnWidth(localStorage.getItem(COLUMN_WIDTH_KEY))
@@ -33,6 +40,8 @@ function App(): React.JSX.Element {
     } catch {
       // The view remains usable if the local preference store is unavailable.
     }
+    // The window never grows beyond the twelve month columns; a failure only leaves it wider.
+    void window.capacityPlanner.setWindowWidthLimit(yearBoardWidth(columnWidth)).catch(() => {})
   }, [columnWidth])
   const [year, setYear] = useState(() => {
     return readStoredYear(
@@ -40,6 +49,7 @@ function App(): React.JSX.Element {
       new Date().getFullYear()
     )
   })
+  const wheelGestureAt = useRef(0)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<AppData | null>(null)
   const dataRef = useRef<AppData | null>(null)
@@ -50,14 +60,13 @@ function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [importRevision, setImportRevision] = useState(0)
   const [settingsView, setSettingsView] = useState<'themes' | 'data'>('themes')
-  const [openThemeEditor, setOpenThemeEditor] = useState(false)
   const [yearMenuOpen, setYearMenuOpen] = useState(false)
 
   useLayoutEffect(() => {
     applyTheme(activeTheme(data?.appearance).colors)
   }, [data?.appearance])
   const openSettings = useCallback(
-    (view: 'themes' | 'data' = 'themes', editThemes = false): void => {
+    (view: 'themes' | 'data' = 'themes'): void => {
       if (
         dataRef.current &&
         !busyRef.current &&
@@ -65,7 +74,6 @@ function App(): React.JSX.Element {
         !document.querySelector('dialog[open]')
       ) {
         setSettingsView(view)
-        setOpenThemeEditor(editThemes)
         setSettingsOpen(true)
       }
     },
@@ -74,12 +82,15 @@ function App(): React.JSX.Element {
   useEffect(() => {
     localStorage.setItem('capacity-planner:selected-year', String(year))
   }, [year])
+  function shiftYear(step: number): void {
+    setYear((current) => Math.min(9999, Math.max(1, current + step)))
+  }
   useEffect(() => {
     const unsubscribe = window.capacityPlanner.onOpenSettings(() => openSettings('themes'))
     const shortcut = (event: KeyboardEvent): void => {
       if ((event.ctrlKey || event.metaKey) && event.key === ',') {
         event.preventDefault()
-        openSettings('themes', true)
+        openSettings('themes')
       }
     }
     document.addEventListener('keydown', shortcut)
@@ -95,8 +106,11 @@ function App(): React.JSX.Element {
       .loadData()
       .then((loaded) => {
         if (active) {
-          dataRef.current = loaded
-          setData(loaded)
+          const upgraded = loaded.appearance
+            ? { ...loaded, appearance: upgradePresetThemes(loaded.appearance) }
+            : loaded
+          dataRef.current = upgraded
+          setData(upgraded)
         }
       })
       .catch((reason: unknown) => {
@@ -261,7 +275,7 @@ function App(): React.JSX.Element {
         <nav className="year-navigation" aria-label="Jahresnavigation">
           <button
             className="header-control year-arrow"
-            onClick={() => setYear((current) => Math.max(1, current - 1))}
+            onClick={() => shiftYear(-1)}
             disabled={year === 1 || busy || dragging}
             aria-label="Vorheriges Jahr"
             title="Vorheriges Jahr"
@@ -277,12 +291,16 @@ function App(): React.JSX.Element {
               aria-haspopup="listbox"
               aria-expanded={yearMenuOpen}
               aria-label="Jahr auswählen"
+              title="Mausrad: Jahr wechseln"
               onClick={() => setYearMenuOpen((open) => !open)}
+              onWheel={(event) => {
+                const gestureStart = event.timeStamp - wheelGestureAt.current > WHEEL_GESTURE_GAP_MS
+                wheelGestureAt.current = event.timeStamp
+                if (!gestureStart || event.deltaY === 0 || busy || dragging) return
+                shiftYear(Math.sign(event.deltaY))
+              }}
             >
               {year}
-              <span className="year-picker-chevron" aria-hidden="true">
-                ⌄
-              </span>
             </button>
             {yearMenuOpen && (
               <div className="year-menu" role="listbox" aria-label="Jahre">
@@ -306,7 +324,7 @@ function App(): React.JSX.Element {
           </div>
           <button
             className="header-control year-arrow"
-            onClick={() => setYear((current) => Math.min(9999, current + 1))}
+            onClick={() => shiftYear(1)}
             disabled={year === 9999 || busy || dragging}
             aria-label="Nächstes Jahr"
             title="Nächstes Jahr"
@@ -374,6 +392,7 @@ function App(): React.JSX.Element {
         cards={yearCards}
         busy={busy}
         ready={data !== null}
+        viewPosition={viewPosition}
         onDraggingChange={setDragging}
         onToggle={toggleDescription}
         onSave={saveCard}
@@ -385,11 +404,16 @@ function App(): React.JSX.Element {
           if (cards !== current.cards) void saveCards(cards, true)
         }}
       />
-      <ViewToolbar width={columnWidth} onChange={setColumnWidth} disabled={dragging} />
+      <ViewToolbar
+        year={year}
+        revenue={monthTotals(yearCards).revenue}
+        width={columnWidth}
+        onChange={setColumnWidth}
+        disabled={dragging}
+      />
       {settingsOpen && (
         <SettingsDialog
           initialView={settingsView}
-          openThemeEditor={openThemeEditor}
           initialTheme={data?.appearance}
           busy={busy}
           onImported={(loaded) => {

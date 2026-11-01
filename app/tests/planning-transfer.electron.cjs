@@ -141,10 +141,9 @@ if (!process.versions.electron) {
     }
     // Persist theme, window and preferences before taking no-change snapshots.
     await click('.settings-open')
-    await click('.settings-theme-edit')
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     await click('.theme-save')
-    await waitFor('!document.querySelector(".theme-dialog")')
+    await waitFor('!!document.querySelector(".theme-saved")')
     await click('.settings-close')
     await js('localStorage.setItem("capacity-planner:column-width", "180")')
     const before = snapshot()

@@ -369,12 +369,13 @@ async function exercise() {
     assert.equal(read().cards[0].order, 0)
     await click('.settings-open')
     await waitFor('!!document.querySelector(".settings-dialog[open]")')
-    await click('.settings-theme-edit')
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
-    await click('[data-theme-id=dracula]')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
+    await js(
+      `(() => { const el=document.querySelector('.theme-select'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,'dracula'); el.dispatchEvent(new Event('change',{bubbles:true})) })()`
+    )
     await fill('color-card', '#334466')
     await click('.theme-save')
-    await waitFor('!document.querySelector(".theme-dialog")')
+    await waitFor('!!document.querySelector(".theme-saved")')
     await click('.settings-close')
     assert.equal(read().appearance.activeId, 'dracula')
     await js(`(() => { const el=document.querySelector('#column-width');

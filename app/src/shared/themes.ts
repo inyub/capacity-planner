@@ -47,7 +47,8 @@ function palette(
   card: string,
   accent: string,
   text = '#f3f1f8',
-  muted = '#b6afc8'
+  muted = '#b6afc8',
+  danger = '#f0a5b5'
 ): ThemeColors {
   return {
     canvas,
@@ -66,7 +67,7 @@ function palette(
     muted,
     accent,
     'accent-strong': lighten(accent, 0.3),
-    danger: '#f0a5b5',
+    danger,
     scrollbar: lighten(column, 0.23),
     'scrollbar-hover': lighten(column, 0.4)
   }
@@ -82,61 +83,254 @@ const preset = (id: string, name: string, colors: ThemeColors): PlannerTheme => 
 export const DEFAULT_THEMES: PlannerTheme[] = [
   preset(
     'blender',
-    'Blender',
-    palette('#242424', '#303030', '#353535', '#1d1d1d', '#484848', '#eea45b', '#f2f2f2', '#bcbcbc')
+    'Bernstein',
+    palette(
+      '#201f1e',
+      '#2c2a28',
+      '#333230',
+      '#191817',
+      '#4b4946',
+      '#ecab65',
+      '#f3f2f1',
+      '#c7c1ba',
+      '#f1acb7'
+    )
   ),
   preset(
     'fl-studio',
-    'FL Studio',
-    palette('#232a2d', '#2e383c', '#343e42', '#1d2528', '#465157', '#b5d96b', '#f0f4ef', '#b5c3bf')
+    'Zitrus',
+    palette(
+      '#1b2022',
+      '#252d30',
+      '#2c3437',
+      '#16191b',
+      '#404d51',
+      '#b4d57b',
+      '#f0f3f5',
+      '#b4c8d0',
+      '#f2aeb9'
+    )
   ),
   preset(
     'maya',
-    'Maya',
-    palette('#252d30', '#303d40', '#354448', '#1c272a', '#475c62', '#79c9cc', '#edf5f5', '#b0c6c8')
+    'Lagune',
+    palette(
+      '#1a2223',
+      '#232f31',
+      '#2a3739',
+      '#151b1c',
+      '#3b5356',
+      '#79c9cd',
+      '#f0f4f5',
+      '#b6cfd2',
+      '#f3b7c1'
+    )
   ),
   preset(
     'obsidian',
-    'Obsidian',
-    palette('#1c1b20', '#26232e', '#2d2936', '#17151c', '#3e374e', '#b69cf2')
+    'Nachtflieder',
+    palette(
+      '#1e1b22',
+      '#292430',
+      '#302c38',
+      '#17151b',
+      '#453a57',
+      '#bc9fef',
+      '#f2f0f5',
+      '#baaece',
+      '#ee98a6'
+    )
   ),
   preset(
     'dark-emerald',
-    'Dark Emerald',
-    palette('#172922', '#20382d', '#294337', '#12241c', '#385746', '#8dd7ac', '#eff8f1', '#adc9b8')
+    'Tiefwald',
+    palette(
+      '#17271f',
+      '#1e362b',
+      '#253f33',
+      '#121f19',
+      '#345d4a',
+      '#8fd1ac',
+      '#f0f5f2',
+      '#c1d9ce',
+      '#f5c4cc'
+    )
   ),
-  preset('space', 'Space', {
-    canvas: '#252331',
-    header: '#302848',
-    'header-highlight': '#393051',
-    column: '#353445',
-    'column-highlight': '#393749',
-    'surface-dark': '#19191d',
-    'surface-dark-highlight': '#1e1c23',
-    card: '#4c456d',
-    'card-highlight': '#554e79',
-    field: '#302b47',
-    line: '#292732',
-    'line-light': '#625d72',
-    text: '#f3f1f8',
-    muted: '#b6afc8',
-    accent: '#a89bd6',
-    'accent-strong': '#c7baf2',
-    danger: '#f0a5b5',
-    scrollbar: '#69617f',
-    'scrollbar-hover': '#9185ad'
-  }),
+  preset(
+    'space',
+    'Nebula',
+    palette(
+      '#1b1a23',
+      '#252332',
+      '#2c2a3a',
+      '#16141c',
+      '#3d375a',
+      '#a497d8',
+      '#f1f0f5',
+      '#b1abcc',
+      '#ed91a1'
+    )
+  ),
   preset(
     'crimson',
-    'Crimson',
-    palette('#2c1d24', '#402633', '#49303b', '#23171e', '#633e4d', '#eca0b3', '#fcf1f5', '#d0b3bf')
+    'Karmin',
+    palette(
+      '#25181d',
+      '#332127',
+      '#3c282e',
+      '#1d1317',
+      '#5c3642',
+      '#ec9cb0',
+      '#f5f0f1',
+      '#ceaeb9',
+      '#ef9caa'
+    )
   ),
   preset(
     'dracula',
-    'Dracula',
-    palette('#21222c', '#282a36', '#303240', '#191a23', '#44475a', '#bd93f9', '#f8f8f2', '#b9bbd0')
+    'Dämmerung',
+    palette(
+      '#1a1b23',
+      '#232531',
+      '#2b2d39',
+      '#15161c',
+      '#3d4054',
+      '#bc91f8',
+      '#f0f1f5',
+      '#b2b6d0',
+      '#ef9caa'
+    )
   )
 ]
+
+const LEGACY_PRESETS: Record<string, { name: string; colors: ThemeColors }> = {
+  blender: {
+    name: 'Blender',
+    colors: palette(
+      '#242424',
+      '#303030',
+      '#353535',
+      '#1d1d1d',
+      '#484848',
+      '#eea45b',
+      '#f2f2f2',
+      '#bcbcbc'
+    )
+  },
+  'fl-studio': {
+    name: 'FL Studio',
+    colors: palette(
+      '#232a2d',
+      '#2e383c',
+      '#343e42',
+      '#1d2528',
+      '#465157',
+      '#b5d96b',
+      '#f0f4ef',
+      '#b5c3bf'
+    )
+  },
+  maya: {
+    name: 'Maya',
+    colors: palette(
+      '#252d30',
+      '#303d40',
+      '#354448',
+      '#1c272a',
+      '#475c62',
+      '#79c9cc',
+      '#edf5f5',
+      '#b0c6c8'
+    )
+  },
+  obsidian: {
+    name: 'Obsidian',
+    colors: palette('#1c1b20', '#26232e', '#2d2936', '#17151c', '#3e374e', '#b69cf2')
+  },
+  'dark-emerald': {
+    name: 'Dark Emerald',
+    colors: palette(
+      '#172922',
+      '#20382d',
+      '#294337',
+      '#12241c',
+      '#385746',
+      '#8dd7ac',
+      '#eff8f1',
+      '#adc9b8'
+    )
+  },
+  space: {
+    name: 'Space',
+    colors: {
+      canvas: '#252331',
+      header: '#302848',
+      'header-highlight': '#393051',
+      column: '#353445',
+      'column-highlight': '#393749',
+      'surface-dark': '#19191d',
+      'surface-dark-highlight': '#1e1c23',
+      card: '#4c456d',
+      'card-highlight': '#554e79',
+      field: '#302b47',
+      line: '#292732',
+      'line-light': '#625d72',
+      text: '#f3f1f8',
+      muted: '#b6afc8',
+      accent: '#a89bd6',
+      'accent-strong': '#c7baf2',
+      danger: '#f0a5b5',
+      scrollbar: '#69617f',
+      'scrollbar-hover': '#9185ad'
+    }
+  },
+  crimson: {
+    name: 'Crimson',
+    colors: palette(
+      '#2c1d24',
+      '#402633',
+      '#49303b',
+      '#23171e',
+      '#633e4d',
+      '#eca0b3',
+      '#fcf1f5',
+      '#d0b3bf'
+    )
+  },
+  dracula: {
+    name: 'Dracula',
+    colors: palette(
+      '#21222c',
+      '#282a36',
+      '#303240',
+      '#191a23',
+      '#44475a',
+      '#bd93f9',
+      '#f8f8f2',
+      '#b9bbd0'
+    )
+  }
+}
+
+/** Gives saved, unedited copies of the former presets their new name and palette. */
+export function upgradePresetThemes(state: ThemeState): ThemeState {
+  let changed = false
+  const themes = state.themes.map((theme) => {
+    const legacy = LEGACY_PRESETS[theme.id]
+    const current = DEFAULT_THEMES.find((item) => item.id === theme.id)
+    if (!legacy || !current || theme.baseId !== theme.id) return theme
+    const renamed = theme.name === legacy.name
+    const recolored = COLOR_FIELDS.every(({ key }) => theme.colors[key] === legacy.colors[key])
+    if (!renamed && !recolored) return theme
+    changed = true
+    return {
+      ...theme,
+      name: renamed ? current.name : theme.name,
+      colors: recolored ? { ...current.colors } : theme.colors
+    }
+  })
+  return changed ? { ...state, themes } : state
+}
 
 export function defaultThemeState(): ThemeState {
   return {

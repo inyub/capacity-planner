@@ -3,21 +3,27 @@ import test from 'node:test'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
-import { activeTheme, COLOR_FIELDS, defaultThemeState, isThemeState } from '../src/shared/themes.ts'
+import {
+  activeTheme,
+  COLOR_FIELDS,
+  defaultThemeState,
+  isThemeState,
+  upgradePresetThemes
+} from '../src/shared/themes.ts'
 import { AppDataStore } from '../src/main/data-store.ts'
 
-test('eight complete presets, existing Space palette and independent editable copies', () => {
+test('eight complete presets, Nebula default palette and independent editable copies', () => {
   const state = defaultThemeState()
   assert.equal(isThemeState(state), true)
   assert.deepEqual(
     state.themes.map((t) => t.name),
-    ['Blender', 'FL Studio', 'Maya', 'Obsidian', 'Dark Emerald', 'Space', 'Crimson', 'Dracula']
+    ['Bernstein', 'Zitrus', 'Lagune', 'Nachtflieder', 'Tiefwald', 'Nebula', 'Karmin', 'Dämmerung']
   )
   assert.equal(COLOR_FIELDS.length, 19)
-  assert.equal(activeTheme().colors.header, '#302848')
-  assert.equal(activeTheme(state).colors.card, '#4c456d')
+  assert.equal(activeTheme().colors.header, '#252332')
+  assert.equal(activeTheme(state).colors.card, '#3d375a')
   state.themes[5].colors.card = '#123456'
-  assert.equal(activeTheme(defaultThemeState()).colors.card, '#4c456d')
+  assert.equal(activeTheme(defaultThemeState()).colors.card, '#3d375a')
 })
 
 test('invalid colors, missing tokens, duplicate ids, unknown presets and invalid selections are rejected', () => {
@@ -92,4 +98,20 @@ test('themes coalesce with card/window saves, survive later writes and restore f
     JSON.parse(await readFile(join(directory, 'data.backup.json'), 'utf8')),
     persisted
   )
+})
+
+test('saved copies of the former presets get new names; edited themes keep their colors', () => {
+  const state = defaultThemeState()
+  const blender = state.themes[0]
+  blender.name = 'Blender'
+  blender.colors = { ...blender.colors, header: '#303030', card: '#484848' }
+  const custom = state.themes[1]
+  custom.name = 'Mein Grün'
+  custom.colors = { ...custom.colors, card: '#123456' }
+  const upgraded = upgradePresetThemes(state)
+  assert.equal(isThemeState(upgraded), true)
+  assert.equal(upgraded.themes[0].name, 'Bernstein')
+  assert.equal(upgraded.themes[1].name, 'Mein Grün')
+  assert.equal(upgraded.themes[1].colors.card, '#123456')
+  assert.equal(upgradePresetThemes(upgraded), upgraded)
 })

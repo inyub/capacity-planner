@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { ThemeColors, ThemeState } from '../../../shared/types'
 import {
   activeTheme,
@@ -11,50 +11,41 @@ import {
 import { applyTheme } from '../applyTheme'
 
 export function ThemeManager({
+  hidden,
   initial,
   busy,
-  onSave,
-  onClose
+  onSave
 }: {
+  hidden: boolean
   initial?: ThemeState
   busy: boolean
   onSave: (state: ThemeState) => Promise<boolean>
-  onClose: () => void
 }): React.JSX.Element {
   const [draft, setDraft] = useState<ThemeState>(() =>
     structuredClone(initial ?? defaultThemeState())
   )
   const [error, setError] = useState<string | null>(null)
-  const modalRef = useRef<HTMLDialogElement>(null)
+  const [saved, setSaved] = useState<ThemeState>(() =>
+    structuredClone(initial ?? defaultThemeState())
+  )
+  const [justSaved, setJustSaved] = useState(false)
   const deleteRef = useRef<HTMLDialogElement>(null)
   const submittingRef = useRef(false)
   const originalRef = useRef(activeTheme(initial).colors)
   const theme = activeTheme(draft)
   const valid = isThemeState(draft)
-  useEffect(() => {
-    const dialog = modalRef.current
-    const previous = document.activeElement as HTMLElement | null
-    dialog?.showModal()
-    return () => {
-      dialog?.close()
-      const target =
-        document.querySelector<HTMLElement>('.settings-theme-edit') ??
-        (previous?.isConnected && previous !== document.body && !previous.matches(':disabled')
-          ? previous
-          : null)
-      target?.focus({ preventScroll: true })
-    }
-  }, [])
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
   useLayoutEffect(() => {
     applyTheme(theme.colors)
     const original = originalRef.current
     return () => applyTheme(original)
   }, [theme.colors])
 
-  function close(): void {
+  function discard(): void {
     if (busy || submittingRef.current) return
-    modalRef.current?.close()
-    onClose()
+    setDraft(structuredClone(saved))
+    setError(null)
+    setJustSaved(false)
   }
   function updateTheme(change: Partial<typeof theme>): void {
     setDraft((current) => ({
@@ -64,6 +55,7 @@ export function ThemeManager({
       )
     }))
     setError(null)
+    setJustSaved(false)
   }
   function color(key: keyof ThemeColors, value: string): void {
     updateTheme({ colors: { ...theme.colors, [key]: value } })
@@ -78,8 +70,10 @@ export function ThemeManager({
         themes: draft.themes.map((item) => ({ ...item, name: item.name.trim() }))
       }
       if (await onSave(state)) {
-        modalRef.current?.close()
-        onClose()
+        originalRef.current = activeTheme(state).colors
+        setSaved(structuredClone(state))
+        setDraft(structuredClone(state))
+        setJustSaved(true)
       } else
         setError(
           'Das Theme konnte nicht gespeichert werden. Deine Änderungen bleiben hier erhalten.'
@@ -97,6 +91,7 @@ export function ThemeManager({
     }
     setDraft((current) => ({ activeId: copy.id, themes: [...current.themes, copy] }))
     setError(null)
+    setJustSaved(false)
   }
   function remove(): void {
     const themes = draft.themes.filter((item) => item.id !== theme.id)
@@ -104,18 +99,12 @@ export function ThemeManager({
     deleteRef.current?.close()
     setDraft({ activeId: themes[0].id, themes })
     setError(null)
+    setJustSaved(false)
   }
   return (
-    <dialog
-      ref={modalRef}
-      className="theme-dialog"
-      aria-labelledby="theme-title"
-      aria-describedby="theme-help"
-      onCancel={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        close()
-      }}
+    <div
+      className="theme-manager"
+      hidden={hidden}
       onKeyDown={(event) => {
         if (event.nativeEvent.isComposing || deleteRef.current?.open) return
         if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
@@ -124,175 +113,157 @@ export function ThemeManager({
         }
       }}
     >
-      <div className="theme-heading">
-        <div>
-          <h2 id="theme-title">Theme</h2>
-          <p id="theme-help">Dein Plan. Deine Farben.</p>
-        </div>
-        <button
-          className="theme-close"
-          type="button"
-          aria-label="Theme schließen"
-          onClick={close}
+      <div className="theme-picker">
+        <label className="theme-select-label" htmlFor="theme-select">
+          Theme
+        </label>
+        <span className="theme-swatches" aria-hidden="true">
+          {[theme.colors.header, theme.colors.card, theme.colors.accent].map((value, index) => (
+            <i key={index} style={{ background: isHexColor(value) ? value : undefined }} />
+          ))}
+        </span>
+        <select
+          id="theme-select"
+          className="theme-select"
+          value={draft.activeId}
           disabled={busy}
+          onChange={(event) => {
+            const activeId = event.target.value
+            setDraft((current) => ({ ...current, activeId }))
+            setError(null)
+            setJustSaved(false)
+          }}
         >
-          ×
+          {draft.themes.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name || 'Unbenannt'}
+            </option>
+          ))}
+        </select>
+        <button
+          className="theme-duplicate theme-button"
+          type="button"
+          onClick={duplicate}
+          disabled={
+            busy ||
+            draft.themes.length >= 64 ||
+            !isThemeState({ activeId: theme.id, themes: [theme] })
+          }
+        >
+          + Duplizieren
         </button>
       </div>
-      <div className="theme-layout">
-        <aside className="theme-sidebar" aria-label="Theme-Auswahl">
-          <div className="theme-presets" role="group" aria-label="Gespeicherte Themes">
-            {draft.themes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="theme-preset"
-                aria-pressed={item.id === draft.activeId}
-                disabled={busy}
-                onClick={() => {
-                  setDraft((current) => ({ ...current, activeId: item.id }))
-                  setError(null)
-                }}
-                data-theme-id={item.id}
-                autoFocus={item.id === draft.activeId}
-              >
-                <span className="theme-swatches" aria-hidden="true">
-                  {[item.colors.header, item.colors.card, item.colors.accent].map(
-                    (value, index) => (
-                      <i
-                        key={index}
-                        style={{ background: isHexColor(value) ? value : undefined }}
-                      />
-                    )
-                  )}
-                </span>
-                <span>{item.name || 'Unbenannt'}</span>
-                {item.id === draft.activeId && (
-                  <span className="theme-selected" aria-hidden="true">
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+      <section className="theme-editor" aria-label="Theme bearbeiten">
+        <fieldset disabled={busy}>
+          <div className="theme-name-row">
+            <label className="theme-name">
+              Name
+              <input
+                name="theme-name"
+                maxLength={64}
+                value={theme.name}
+                aria-invalid={!theme.name.trim()}
+                onChange={(event) => updateTheme({ name: event.target.value })}
+              />
+            </label>
+            <button
+              className="theme-button theme-reset"
+              type="button"
+              onClick={() =>
+                updateTheme({
+                  colors: { ...DEFAULT_THEMES.find((item) => item.id === theme.baseId)!.colors }
+                })
+              }
+            >
+              Zurücksetzen
+            </button>
+            <button
+              className="theme-button theme-delete"
+              type="button"
+              onClick={() => deleteRef.current?.showModal()}
+              disabled={draft.themes.length === 1}
+              title={
+                draft.themes.length === 1
+                  ? 'Mindestens ein Theme bleibt erhalten.'
+                  : 'Theme löschen'
+              }
+            >
+              Löschen
+            </button>
           </div>
-          <button
-            className="theme-duplicate theme-button"
-            type="button"
-            onClick={duplicate}
-            disabled={
-              busy ||
-              draft.themes.length >= 64 ||
-              !isThemeState({ activeId: theme.id, themes: [theme] })
-            }
-          >
-            + Duplizieren
-          </button>
-        </aside>
-        <section className="theme-editor" aria-label="Theme bearbeiten">
-          <fieldset disabled={busy}>
-            <div className="theme-name-row">
-              <label className="theme-name">
-                Name
-                <input
-                  name="theme-name"
-                  maxLength={64}
-                  value={theme.name}
-                  aria-invalid={!theme.name.trim()}
-                  onChange={(event) => updateTheme({ name: event.target.value })}
-                />
-              </label>
-              <button
-                className="theme-button theme-reset"
-                type="button"
-                onClick={() =>
-                  updateTheme({
-                    colors: { ...DEFAULT_THEMES.find((item) => item.id === theme.baseId)!.colors }
-                  })
-                }
-              >
-                Zurücksetzen
-              </button>
-              <button
-                className="theme-button theme-delete"
-                type="button"
-                onClick={() => deleteRef.current?.showModal()}
-                disabled={draft.themes.length === 1}
-                title={
-                  draft.themes.length === 1
-                    ? 'Mindestens ein Theme bleibt erhalten.'
-                    : 'Theme löschen'
-                }
-              >
-                Löschen
-              </button>
-            </div>
-            <div className="theme-preview" aria-label="Farbvorschau">
-              <span className="theme-preview-label">Vorschau</span>
-              <div className="planner-card">
-                <div className="card-header">
-                  <span className="card-label">Auftraggeber / Messe</span>
-                  <span aria-hidden="true">✦</span>
+          <div className="theme-preview" aria-label="Farbvorschau">
+            <span className="theme-preview-label">Vorschau</span>
+            <div className="planner-card">
+              <div className="card-header">
+                <span className="card-label">Auftraggeber / Messe</span>
+                <span aria-hidden="true">✦</span>
+              </div>
+              <div className="card-body">
+                <div className="card-title-row">
+                  <h3 className="card-title">Buchsatz</h3>
                 </div>
-                <div className="card-body">
-                  <div className="card-title-row">
-                    <h3 className="card-title">Buchsatz</h3>
-                  </div>
-                  <div className="card-values">
-                    <span>10–15 h</span>
-                    <span>150–300 EUR</span>
-                  </div>
+                <div className="card-values">
+                  <span>10–15 h</span>
+                  <span>150–300 EUR</span>
                 </div>
               </div>
-              <p>Die Jahresansicht zeigt deine Änderungen live.</p>
             </div>
-            <h3 className="theme-colors-title">Farben</h3>
-            <div className="theme-colors">
-              {COLOR_FIELDS.map(({ key, label }) => (
-                <div className="theme-color" key={key}>
-                  <label htmlFor={`color-${key}`}>{label}</label>
-                  <div>
-                    <input
-                      type="color"
-                      value={isHexColor(theme.colors[key]) ? theme.colors[key] : '#000000'}
-                      onChange={(event) => color(key, event.target.value)}
-                      aria-label={`${label} auswählen`}
-                    />
-                    <input
-                      id={`color-${key}`}
-                      name={`color-${key}`}
-                      value={theme.colors[key]}
-                      maxLength={7}
-                      spellCheck={false}
-                      autoComplete="off"
-                      aria-invalid={!isHexColor(theme.colors[key])}
-                      aria-describedby={
-                        !isHexColor(theme.colors[key]) ? 'theme-color-error' : undefined
-                      }
-                      onChange={(event) => color(key, event.target.value)}
-                    />
-                  </div>
+            <p>Die Jahresansicht zeigt deine Änderungen live.</p>
+          </div>
+          <h3 className="theme-colors-title">Farben</h3>
+          <div className="theme-colors">
+            {COLOR_FIELDS.map(({ key, label }) => (
+              <div className="theme-color" key={key}>
+                <label htmlFor={`color-${key}`}>{label}</label>
+                <div>
+                  <input
+                    type="color"
+                    value={isHexColor(theme.colors[key]) ? theme.colors[key] : '#000000'}
+                    onChange={(event) => color(key, event.target.value)}
+                    aria-label={`${label} auswählen`}
+                  />
+                  <input
+                    id={`color-${key}`}
+                    name={`color-${key}`}
+                    value={theme.colors[key]}
+                    maxLength={7}
+                    spellCheck={false}
+                    autoComplete="off"
+                    aria-invalid={!isHexColor(theme.colors[key])}
+                    aria-describedby={
+                      !isHexColor(theme.colors[key]) ? 'theme-color-error' : undefined
+                    }
+                    onChange={(event) => color(key, event.target.value)}
+                  />
                 </div>
-              ))}
-            </div>
-            {!valid && (
-              <p className="form-error" id="theme-color-error">
-                Bitte einen Namen und Farben im Format #RRGGBB eingeben.
-              </p>
-            )}
-          </fieldset>
-        </section>
-      </div>
+              </div>
+            ))}
+          </div>
+          {!valid && (
+            <p className="form-error" id="theme-color-error">
+              Bitte einen Namen und Farben im Format #RRGGBB eingeben.
+            </p>
+          )}
+        </fieldset>
+      </section>
       <div className="theme-actions">
         <div>
-          <p>Änderungen werden mit Speichern übernommen.</p>
+          <p className={justSaved ? 'theme-saved' : undefined}>
+            {justSaved ? 'Theme gespeichert.' : 'Änderungen werden mit Speichern übernommen.'}
+          </p>
           {error && (
             <p role="alert" className="form-error">
               {error}
             </p>
           )}
         </div>
-        <button type="button" className="theme-button" onClick={close} disabled={busy}>
-          Abbrechen
+        <button
+          type="button"
+          className="theme-button theme-discard"
+          onClick={discard}
+          disabled={busy || !dirty}
+        >
+          Verwerfen
         </button>
         <button
           type="button"
@@ -324,6 +295,6 @@ export function ThemeManager({
           </button>
         </div>
       </dialog>
-    </dialog>
+    </div>
   )
 }

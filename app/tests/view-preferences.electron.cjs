@@ -87,6 +87,12 @@ if (!process.versions.electron) {
     const width = () =>
       js('Math.round(document.querySelector(".month-column").getBoundingClientRect().width)')
     const read = () => JSON.parse(fs.readFileSync(path.join(profile, 'data.json'), 'utf8'))
+    const viewState = () =>
+      js(`({
+        boardLeft: Math.round(document.querySelector('.year-board').scrollLeft),
+        columnTops: [...document.querySelectorAll('.month-cards')].map((el) => Math.round(el.scrollTop)),
+        focusedCardId: document.activeElement?.querySelector('[data-card-id]')?.dataset.cardId ?? null
+      })`)
     const hidden = () =>
       js('getComputedStyle(document.querySelector("[data-month=\\"0\\"] .add-card")).opacity')
     const click = async (selector) => {
@@ -107,6 +113,11 @@ if (!process.versions.electron) {
     await pause(200)
     if (phase === 'restart') {
       const expected = JSON.parse(fs.readFileSync(path.join(profile, 'expected.json'), 'utf8'))
+      assert.deepEqual(
+        await viewState(),
+        expected.view,
+        'scroll and focus restored in a new process'
+      )
       assert.equal(await width(), 315)
       assert.equal(
         await js('Number(document.querySelector(".selected-year").textContent)'),
@@ -167,9 +178,7 @@ if (!process.versions.electron) {
     assert.equal(await hidden(), '0', 'saved form must not keep Add visible')
     await js('document.querySelector("[data-month=\\"0\\"] .add-card").focus()')
     await key(',', ['control'])
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
-    await key('Escape')
-    assert.equal(await js('!!document.querySelector(".settings-dialog[open]")'), true)
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     await key('Escape')
     await waitFor('!document.querySelector(".settings-dialog")')
     assert.equal(await js('document.activeElement.matches(".add-card")'), true)
@@ -180,23 +189,23 @@ if (!process.versions.electron) {
     const boundsBeforeHeader = win.getBounds()
     await click('.settings-open')
     await waitFor('!!document.querySelector(".settings-dialog[open]")')
-    assert.equal(await js('!!document.querySelector(".theme-dialog")'), false)
+    assert.equal(await js('!!document.querySelector(".theme-manager:not([hidden])")'), true)
     await click('.settings-nav-item:nth-child(2)')
+    assert.equal(await js('!!document.querySelector(".theme-manager:not([hidden])")'), false)
     assert.equal(
       await js('document.querySelector(".planning-data h3").textContent'),
       'Planungsdaten aller Jahre'
     )
     await key(',', ['control'])
-    await waitFor('!!document.querySelector(".theme-dialog[open]")')
+    await waitFor('!!document.querySelector(".theme-manager:not([hidden])")')
     await fill('[name=color-card]', '#123456')
     await key('Escape')
+    await waitFor('!document.querySelector(".settings-dialog")')
     assert.equal(
       await js('getComputedStyle(document.documentElement).getPropertyValue("--card").trim()'),
-      '#4c456d'
+      '#3d375a'
     )
     assert.equal(read().appearance, undefined)
-    assert.equal(await js('document.activeElement.matches(".settings-theme-edit")'), true)
-    await click('.settings-close')
     assert.equal(await js('document.activeElement.matches(".settings-open")'), true)
     assert.deepEqual(win.getBounds(), boundsBeforeHeader)
     assert.equal(
@@ -371,10 +380,25 @@ if (!process.versions.electron) {
     await click('[aria-label="Nächstes Jahr"]')
     await move(454, 204)
     assert.equal(await hidden(), '0', 'year change must not leave Add visible')
+    // Back on the year with cards, so the scroll positions and focused card are real.
+    await click('[aria-label="Vorheriges Jahr"]')
+    await js(`(() => {
+      document.querySelector('.year-board').scrollLeft = 240
+      document.querySelector('.month-cards[data-month="1"]').scrollTop = 60
+      document.querySelector('[data-card-id="Tall-3"]').closest('.sortable-card').focus({ preventScroll: true })
+    })()`)
+    await pause(600)
+    const view = await viewState()
+    assert.deepEqual(view, {
+      boardLeft: 240,
+      columnTops: [0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      focusedCardId: 'Tall-3'
+    })
+    console.log('PASS: scroll position and focused card recorded for the restart')
     const year = await js('Number(document.querySelector(".selected-year").textContent)')
     fs.writeFileSync(
       path.join(profile, 'expected.json'),
-      JSON.stringify({ cards: read().cards, year })
+      JSON.stringify({ cards: read().cards, year, view })
     )
     win.close()
   }

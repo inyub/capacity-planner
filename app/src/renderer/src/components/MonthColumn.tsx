@@ -17,6 +17,7 @@ export function MonthColumn({
   ready,
   onSave,
   onDelete,
+  onScrollTop,
   dragging
 }: {
   month: string
@@ -29,6 +30,7 @@ export function MonthColumn({
   dragging: boolean
   onSave: (fields: CardFields, card?: Card) => Promise<boolean>
   onDelete: (id: string) => Promise<boolean>
+  onScrollTop: (top: number) => void
 }): React.JSX.Element {
   const headingId = `month-${monthIndex}`
   const { setNodeRef, isOver } = useDroppable({
@@ -70,6 +72,7 @@ export function MonthColumn({
         role="region"
         aria-label={`Einträge für ${month} ${year}`}
         tabIndex={0}
+        onScroll={(event) => onScrollTop(event.currentTarget.scrollTop)}
       >
         <SortableContext
           items={cards.map((card) => card.id)}

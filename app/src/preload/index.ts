@@ -27,6 +27,8 @@ const capacityPlanner: CapacityPlannerApi = {
   minimizeWindow: (): Promise<void> => ipcRenderer.invoke('window:minimize'),
   toggleMaximizeWindow: (): Promise<void> => ipcRenderer.invoke('window:toggle-maximize'),
   toggleFullscreen: (): Promise<void> => ipcRenderer.invoke('window:toggle-fullscreen'),
+  setWindowWidthLimit: (width: number): Promise<void> =>
+    ipcRenderer.invoke('window:width-limit', width),
   showHeaderMenu: (): Promise<void> => ipcRenderer.invoke('header:menu'),
   onOpenSettings: (callback: () => void): (() => void) => {
     const handler = (): void => callback()

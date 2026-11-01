@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import {
   closestCenter,
   DndContext,
@@ -18,6 +18,7 @@ import type { CardFields } from './CardForm'
 import { MonthColumn } from './MonthColumn'
 import { PlannerCard } from './PlannerCard'
 import { useBoardAutoScroll } from '../useBoardAutoScroll'
+import type { ViewPositionStore } from '../useViewPosition'
 
 const MONTHS = [
   'Januar',
@@ -71,6 +72,7 @@ export function YearBoard({
   cards,
   busy,
   ready,
+  viewPosition,
   onDraggingChange,
   onToggle,
   onSave,
@@ -81,6 +83,7 @@ export function YearBoard({
   cards: Card[]
   busy: boolean
   ready: boolean
+  viewPosition: ViewPositionStore
   onDraggingChange: (dragging: boolean) => void
   onToggle: (id: string) => void
   onSave: (fields: CardFields, month: number, card?: Card) => Promise<boolean>
@@ -88,6 +91,21 @@ export function YearBoard({
   onMove: (id: string, month: number, index: number) => void
 }): React.JSX.Element {
   const board = useRef<HTMLDivElement>(null)
+  // Runs once the cards exist, because a scroll position cannot be restored into empty columns.
+  useLayoutEffect(() => {
+    const element = board.current
+    if (!ready || !element) return
+    const saved = viewPosition.read()
+    element.scrollLeft = saved.boardLeft
+    element.querySelectorAll<HTMLElement>('.month-cards').forEach((list) => {
+      list.scrollTop = saved.columnTops[Number(list.dataset.month)] ?? 0
+    })
+    const focused = Array.from(element.querySelectorAll<HTMLElement>('[data-card-id]')).find(
+      (card) => card.dataset.cardId === saved.focusedCardId
+    )
+    // A card that no longer exists leaves focus at the default start of the view.
+    focused?.closest<HTMLElement>('.sortable-card')?.focus({ preventScroll: true })
+  }, [ready, viewPosition])
   const [active, setActive] = useState<Card | null>(null)
   const pointerRef = useBoardAutoScroll(board, active !== null)
   const sensors = useSensors(
@@ -153,6 +171,13 @@ export function YearBoard({
         role="region"
         aria-label={`Monatsübersicht ${year}`}
         tabIndex={0}
+        onScroll={(event) => viewPosition.setBoardLeft(event.currentTarget.scrollLeft)}
+        onFocus={(event) => {
+          const card = (event.target as HTMLElement)
+            .closest('.sortable-card')
+            ?.querySelector<HTMLElement>('[data-card-id]')
+          if (card?.dataset.cardId) viewPosition.setFocusedCard(card.dataset.cardId)
+        }}
       >
         {MONTHS.map((month, index) => (
           <MonthColumn
@@ -167,6 +192,7 @@ export function YearBoard({
             ready={ready}
             onSave={(fields, card) => onSave(fields, index, card)}
             onDelete={onDelete}
+            onScrollTop={(top) => viewPosition.setColumnTop(index, top)}
           />
         ))}
       </div>

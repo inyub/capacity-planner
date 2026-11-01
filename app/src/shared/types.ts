@@ -81,6 +81,7 @@ export interface CapacityPlannerApi extends UpdateApi {
   minimizeWindow: () => Promise<void>
   toggleMaximizeWindow: () => Promise<void>
   toggleFullscreen: () => Promise<void>
+  setWindowWidthLimit: (width: number) => Promise<void>
   showHeaderMenu: () => Promise<void>
   onOpenSettings: (callback: () => void) => () => void
 }
