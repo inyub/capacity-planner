@@ -1,6 +1,6 @@
 {
   "name": "capacity-planner",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Lokaler Capacity Planner für Windows",
   "main": "./out/main/index.js",
   "author": "",

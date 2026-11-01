@@ -55,7 +55,7 @@ export function PlannerCard({
               disabled={disabled}
             >
               <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path d={card.expanded ? 'm3 11 5-7 5 7Z' : 'm3 5 5 7 5-7Z'} />
+                <path d={card.expanded ? 'm3 11.5 5-7 5 7Z' : 'm3 4.5 5 7 5-7Z'} />
               </svg>
             </button>
           )}

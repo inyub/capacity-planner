@@ -337,9 +337,12 @@
   line-height: 1.3;
 }
 .description-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
-  padding: 2px;
+  padding: 0;
   color: var(--card);
   background: var(--text);
   cursor: pointer;
@@ -827,6 +830,12 @@ button:disabled {
   font-size: calc(13px * var(--ui-scale));
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+.update-settings {
+  text-align: center;
+}
+.update-settings .planning-actions {
+  justify-content: center;
 }
 .planning-actions {
   display: flex;
