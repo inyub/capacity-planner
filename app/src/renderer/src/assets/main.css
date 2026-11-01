@@ -7,6 +7,8 @@
   --radius-small: 6px;
   /* Set by the UI scale setting; multiplies every font size and text-bound control height. */
   --ui-scale: 1;
+  /* Resolved at the root so the board can reset --ui-scale for its own descendants. */
+  --board-zoom: var(--ui-scale);
   /* Shared 4px grid for cards and the card form. */
   --space-1: 4px;
   --space-2: 8px;
@@ -134,11 +136,19 @@
   scrollbar-color: var(--scrollbar) var(--surface-dark);
   scrollbar-width: thin;
   overscroll-behavior-x: contain;
+  /* The UI scale enlarges the whole board (text, padding, cards) uniformly, so the
+     font and control sizes inside it must not apply the scale a second time. */
+  zoom: var(--board-zoom);
+  --ui-scale: 1;
+  --control-height: 28px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
 }
 .month-column {
   container-type: inline-size;
   display: grid;
-  flex: 0 0 var(--column-width);
+  flex: 1 0 var(--column-width);
   grid-template-rows: var(--month-heading-height) minmax(0, 1fr) auto;
   min-width: 0;
   height: 100%;
