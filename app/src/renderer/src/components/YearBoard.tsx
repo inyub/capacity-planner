@@ -1,0 +1,182 @@
+import { useRef, useState } from 'react'
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  PointerSensor,
+  pointerWithin,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent
+} from '@dnd-kit/core'
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import type { Card } from '../../../shared/types'
+import type { CardFields } from './CardForm'
+import { MonthColumn } from './MonthColumn'
+import { PlannerCard } from './PlannerCard'
+import { useBoardAutoScroll } from '../useBoardAutoScroll'
+
+const MONTHS = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember'
+]
+
+// Hit-test the visible list first, so offscreen cards, headings and footers never steal a drop.
+const monthCollision: CollisionDetection = (args) => {
+  if (!args.pointerCoordinates) return closestCenter(args)
+  const columns = args.droppableContainers.filter(
+    (container) => container.data.current?.type === 'month'
+  )
+  const bounds = columns[0]?.node.current?.closest('.year-board')?.getBoundingClientRect()
+  const point = args.pointerCoordinates
+  if (
+    !bounds ||
+    point.x < bounds.left ||
+    point.x > bounds.right ||
+    point.y < bounds.top ||
+    point.y > bounds.bottom
+  )
+    return []
+  const hit = pointerWithin({ ...args, droppableContainers: columns })[0]
+  if (!hit) return []
+  const month = args.droppableContainers.find((container) => container.id === hit.id)?.data.current
+    ?.month
+  const items = args.droppableContainers.filter(
+    (container) =>
+      container.data.current?.type !== 'month' && container.data.current?.month === month
+  )
+  // Blank space after the last card is an explicit append target.
+  const belowAll = items.every((item) => {
+    const rect = args.droppableRects.get(item.id)
+    return !rect || point.y > rect.bottom
+  })
+  return items.length && !belowAll ? closestCenter({ ...args, droppableContainers: items }) : [hit]
+}
+
+export function YearBoard({
+  year,
+  cards,
+  busy,
+  ready,
+  onDraggingChange,
+  onToggle,
+  onSave,
+  onDelete,
+  onMove
+}: {
+  year: number
+  cards: Card[]
+  busy: boolean
+  ready: boolean
+  onDraggingChange: (dragging: boolean) => void
+  onToggle: (id: string) => void
+  onSave: (fields: CardFields, month: number, card?: Card) => Promise<boolean>
+  onDelete: (id: string) => Promise<boolean>
+  onMove: (id: string, month: number, index: number) => void
+}): React.JSX.Element {
+  const board = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState<Card | null>(null)
+  const pointerRef = useBoardAutoScroll(board, active !== null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+  function stop(): void {
+    setActive(null)
+    onDraggingChange(false)
+  }
+  function drop({ active: dragged, over }: DragEndEvent): void {
+    stop()
+    if (!over || busy || !active || active.year !== year) return
+    const month = over.data.current?.month as number | undefined
+    if (month === undefined) return
+    const destination = cards
+      .filter((card) => card.month === month)
+      .sort((a, b) => a.order - b.order)
+    const targetIndex = destination.findIndex((card) => card.id === over.id)
+    let index = targetIndex < 0 ? destination.length : targetIndex
+    if (month !== active.month && targetIndex >= 0) {
+      const y = pointerRef.current?.y ?? over.rect.top
+      if (y > over.rect.top + over.rect.height / 2) index++
+    }
+    onMove(String(dragged.id), month, index)
+  }
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={monthCollision}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+      autoScroll={false}
+      accessibility={{
+        screenReaderInstructions: {
+          draggable:
+            'Leertaste zum Aufnehmen. Pfeiltasten zum Verschieben, Leertaste zum Ablegen, Escape zum Abbrechen.'
+        },
+        announcements: {
+          onDragStart: () => 'Karte aufgenommen.',
+          onDragOver: ({ over }) =>
+            over ? `Ziel: ${MONTHS[over.data.current?.month]}.` : 'Außerhalb der Monatslisten.',
+          onDragEnd: ({ over }) => (over ? 'Karte abgelegt.' : 'Verschieben abgebrochen.'),
+          onDragCancel: () => 'Verschieben abgebrochen.'
+        }
+      }}
+      onDragStart={({ active, activatorEvent }) => {
+        const card = cards.find((card) => card.id === active.id)
+        if (!card || busy) return
+        if ('clientX' in activatorEvent && 'clientY' in activatorEvent)
+          pointerRef.current = {
+            x: Number(activatorEvent.clientX),
+            y: Number(activatorEvent.clientY)
+          }
+        setActive(card)
+        onDraggingChange(true)
+      }}
+      onDragCancel={stop}
+      onDragEnd={drop}
+    >
+      <div
+        ref={board}
+        className={`year-board${active ? ' is-dragging' : ''}`}
+        role="region"
+        aria-label={`Monatsübersicht ${year}`}
+        tabIndex={0}
+      >
+        {MONTHS.map((month, index) => (
+          <MonthColumn
+            key={month}
+            month={month}
+            monthIndex={index}
+            year={year}
+            cards={cards.filter((card) => card.month === index).sort((a, b) => a.order - b.order)}
+            onToggle={onToggle}
+            busy={busy}
+            dragging={active !== null}
+            ready={ready}
+            onSave={(fields, card) => onSave(fields, index, card)}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+      <DragOverlay dropAnimation={null}>
+        {active ? (
+          <div className="card-drag-overlay" aria-hidden="true">
+            <PlannerCard card={active} disabled onEdit={() => {}} onToggle={() => {}} />
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  )
+}

@@ -1,0 +1,64 @@
+:root {
+  font-family: Inter, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+  font-weight: 400;
+  --canvas: #252331;
+  --header: #302848;
+  --header-highlight: #393051;
+  --column: #353445;
+  --column-highlight: #393749;
+  --surface-dark: #19191d;
+  --surface-dark-highlight: #1e1c23;
+  --card: #4c456d;
+  --card-highlight: #554e79;
+  --field: #302b47;
+  --line: #292732;
+  --line-light: #625d72;
+  --text: #f3f1f8;
+  --muted: #b6afc8;
+  --accent: #a89bd6;
+  --accent-strong: #c7baf2;
+  --danger: #f0a5b5;
+  --scrollbar: #69617f;
+  --scrollbar-hover: #9185ad;
+  --column-width: 252px;
+  --header-height: 70px;
+  --month-heading-height: 44px;
+  --month-footer-height: 126px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--text);
+  background: var(--canvas);
+}
+button {
+  color: inherit;
+  font: inherit;
+}
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: -3px;
+}
+::selection {
+  color: var(--surface-dark);
+  background: var(--accent-strong);
+}

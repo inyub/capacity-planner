@@ -1,0 +1,43 @@
+appId: de.dkarsiko.capacityplanner
+productName: Capacity Planner
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/main/**
+  - out/preload/**
+  - out/renderer/**
+  - resources/**
+asarUnpack:
+  - resources/**
+win:
+  executableName: CapacityPlanner
+  icon: build/icon.ico
+  signExecutable: false
+  requestedExecutionLevel: asInvoker
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  include: build/installer.nsh
+  differentialPackage: false
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Capacity-Planner-${version}-Setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: true
+  deleteAppDataOnUninstall: false
+  runAfterFinish: false
+  installerLanguages:
+    - de_DE
+    - en_US
+npmRebuild: false
+publish:
+  provider: github
+  owner: UPDATE_OWNER_NOT_CONFIGURED
+  repo: UPDATE_REPO_NOT_CONFIGURED
+  releaseType: release
