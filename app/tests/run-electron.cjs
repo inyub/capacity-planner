@@ -9,6 +9,7 @@ for (const name of [
   'view-preferences',
   'time',
   'planning-transfer',
+  'weeks',
   'updates'
 ]) {
   const result = spawnSync(process.execPath, [path.join(__dirname, `${name}.electron.cjs`)], {

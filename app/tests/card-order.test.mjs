@@ -66,3 +66,51 @@ test('no-op drops and invalid year/month/id never move cards', () => {
   assert.equal(moveCard(cards, 2026, 'missing', 1, 0), cards)
   assert.equal(moveCard(cards, 2026, 'A', 12, 0), cards)
 })
+
+test('grouped moves set, change and clear the week and renumber in display order', () => {
+  const november = [
+    { id: 'n1', year: 2026, month: 10, order: 0, week: 45 },
+    { id: 'n2', year: 2026, month: 10, order: 1, week: 45 },
+    { id: 'n3', year: 2026, month: 10, order: 2 },
+    { id: 'n4', year: 2026, month: 10, order: 3, week: 47 }
+  ].map(Object.freeze)
+  const weekList = (result) =>
+    result
+      .filter((card) => card.month === 10)
+      .sort((a, b) => a.order - b.order)
+      .map((card) => [card.id, card.week ?? null])
+  let result = moveCard(november, 2026, 'n2', 10, 0, 47)
+  assert.deepEqual(weekList(result), [
+    ['n3', null],
+    ['n1', 45],
+    ['n2', 47],
+    ['n4', 47]
+  ])
+  result = moveCard(result, 2026, 'n1', 10, 5, null)
+  assert.deepEqual(weekList(result), [
+    ['n3', null],
+    ['n1', null],
+    ['n2', 47],
+    ['n4', 47]
+  ])
+  assert.equal('week' in result.find((card) => card.id === 'n1'), false)
+  result = moveCard(result, 2026, 'n4', 11, 0, 49)
+  assert.deepEqual(
+    result.filter((card) => card.month === 11).map((card) => [card.id, card.week, card.order]),
+    [['n4', 49, 0]]
+  )
+  assert.equal(moveCard(november, 2026, 'n1', 10, 0, 12), november)
+  assert.equal(moveCard(result, 2026, 'n3', 10, 0, null), result)
+})
+
+test('ungrouped moves keep the week inside the month and drop it across months', () => {
+  const list = [
+    { id: 'w1', year: 2026, month: 10, order: 0, week: 45 },
+    { id: 'w2', year: 2026, month: 10, order: 1, week: 46 }
+  ].map(Object.freeze)
+  let result = moveCard(list, 2026, 'w1', 10, 1)
+  assert.equal(result.find((card) => card.id === 'w1').week, 45)
+  result = moveCard(result, 2026, 'w1', 11, 0)
+  assert.equal('week' in result.find((card) => card.id === 'w1'), false)
+  assert.equal(result.find((card) => card.id === 'w2').week, 46)
+})

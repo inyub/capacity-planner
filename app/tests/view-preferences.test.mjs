@@ -3,13 +3,15 @@ import assert from 'node:assert/strict'
 import {
   defaultViewPosition,
   readColumnWidth,
+  readUiScale,
+  readWeekGrouping,
   readViewPosition
 } from '../src/renderer/src/viewPreferences.ts'
 
 test('column width restores boundaries and falls back for corrupt or unsupported preferences', () => {
-  for (const width of [180, 252, 315, 360]) assert.equal(readColumnWidth(String(width)), width)
-  for (const value of [null, '', 'NaN', 'Infinity', '179', '361', '252.5', '300px'])
-    assert.equal(readColumnWidth(value), 252)
+  for (const width of [100, 250, 315, 360]) assert.equal(readColumnWidth(String(width)), width)
+  for (const value of [null, '', 'NaN', 'Infinity', '99', '361', '252.5', '300px'])
+    assert.equal(readColumnWidth(value), 250)
 })
 
 test('view position restores valid scroll offsets and the focused card', () => {
@@ -38,4 +40,15 @@ test('damaged view position fields fall back individually', () => {
   assert.equal(position.boardLeft, 0)
   assert.deepEqual(position.columnTops, [5, 0, 0, 7, 0, 2, 0, 0, 0, 0, 0, 0])
   assert.equal(position.focusedCardId, null)
+})
+
+test('UI scale restores 50 to 150 percent in steps of five and falls back otherwise', () => {
+  for (const scale of [50, 95, 100, 150]) assert.equal(readUiScale(String(scale)), scale)
+  for (const value of [null, '', 'NaN', '45', '155', '102', '100.5', '100%'])
+    assert.equal(readUiScale(value), 100)
+})
+
+test('week grouping is off unless explicitly stored as on', () => {
+  assert.equal(readWeekGrouping('true'), true)
+  for (const value of [null, '', 'false', '1', 'TRUE']) assert.equal(readWeekGrouping(value), false)
 })

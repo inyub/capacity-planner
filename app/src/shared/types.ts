@@ -19,6 +19,8 @@ export interface Card {
   revenueMax: number
   currency: Currency
   expanded: boolean
+  /** ISO calendar week (1–53) for the optional week grouping; absent means "Ohne KW". */
+  week?: number
 }
 
 export interface WindowBounds {
@@ -84,6 +86,7 @@ export interface CapacityPlannerApi extends UpdateApi {
   setWindowWidthLimit: (width: number) => Promise<void>
   showHeaderMenu: () => Promise<void>
   onOpenSettings: (callback: () => void) => () => void
+  onHeaderPointer: (callback: (inside: boolean) => void) => () => void
 }
 
 export interface PlanningPreview {

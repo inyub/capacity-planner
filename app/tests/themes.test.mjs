@@ -6,18 +6,31 @@ import { basename, dirname, join } from 'node:path'
 import {
   activeTheme,
   COLOR_FIELDS,
+  addMissingPresetThemes,
   defaultThemeState,
   isThemeState,
   upgradePresetThemes
 } from '../src/shared/themes.ts'
 import { AppDataStore } from '../src/main/data-store.ts'
 
-test('eight complete presets, Nebula default palette and independent editable copies', () => {
+test('eleven complete presets, Nebula default palette and independent editable copies', () => {
   const state = defaultThemeState()
   assert.equal(isThemeState(state), true)
   assert.deepEqual(
     state.themes.map((t) => t.name),
-    ['Bernstein', 'Zitrus', 'Lagune', 'Nachtflieder', 'Tiefwald', 'Nebula', 'Karmin', 'Dämmerung']
+    [
+      'Bernstein',
+      'Zitrus',
+      'Lagune',
+      'Nachtflieder',
+      'Tiefwald',
+      'Nebula',
+      'Karmin',
+      'Dämmerung',
+      'Napper',
+      'Erdgold',
+      'Cyberpunk Neon'
+    ]
   )
   assert.equal(COLOR_FIELDS.length, 19)
   assert.equal(activeTheme().colors.header, '#252332')
@@ -98,6 +111,32 @@ test('themes coalesce with card/window saves, survive later writes and restore f
     JSON.parse(await readFile(join(directory, 'data.backup.json'), 'utf8')),
     persisted
   )
+})
+
+test('presets missing from saved state are appended once, existing themes stay untouched', () => {
+  const state = defaultThemeState()
+  state.themes = state.themes.slice(0, 8)
+  state.themes[1].colors.card = '#123456'
+  const added = addMissingPresetThemes(state)
+  assert.equal(isThemeState(added), true)
+  assert.deepEqual(
+    added.themes.map((t) => t.name),
+    [
+      'Bernstein',
+      'Zitrus',
+      'Lagune',
+      'Nachtflieder',
+      'Tiefwald',
+      'Nebula',
+      'Karmin',
+      'Dämmerung',
+      'Napper',
+      'Erdgold',
+      'Cyberpunk Neon'
+    ]
+  )
+  assert.equal(added.themes[1].colors.card, '#123456')
+  assert.equal(addMissingPresetThemes(added), added)
 })
 
 test('saved copies of the former presets get new names; edited themes keep their colors', () => {

@@ -125,7 +125,7 @@ if (!process.versions.electron) {
       )
       assert.deepEqual(read().cards, expected.cards)
       await click('[aria-label="Spaltenbreite zurücksetzen"]')
-      assert.equal(await width(), 252)
+      assert.equal(await width(), 250)
       assert.equal(
         await js('Number(document.querySelector(".selected-year").textContent)'),
         expected.year
@@ -223,7 +223,7 @@ if (!process.versions.electron) {
       'PASS: settings/data/theme navigation, unsaved preview rollback, header focus, hit areas and drag regions'
     )
 
-    assert.equal(await width(), 252)
+    assert.equal(await width(), 250)
     const cardsBeforeWidth = read().cards
     await fill('#column-width', '300')
     await js('document.querySelector("#column-width").focus()')
@@ -231,7 +231,7 @@ if (!process.versions.electron) {
     assert.equal(await width(), 301)
     assert.equal(await js('document.querySelector(".view-toolbar output").textContent'), '301 px')
     await click('[aria-label="Spaltenbreite zurücksetzen"]')
-    assert.equal(await width(), 252)
+    assert.equal(await width(), 250)
     assert.deepEqual(read().cards, cardsBeforeWidth)
 
     const point = (selector, fraction = 0.5) =>

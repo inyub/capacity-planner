@@ -1,6 +1,6 @@
 {
   "name": "capacity-planner",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Lokaler Capacity Planner für Windows",
   "main": "./out/main/index.js",
   "author": "",
@@ -25,6 +25,7 @@
     "build:win:dir": "npm run prepare:icon && npm run build && node scripts/build-windows.mjs --dir",
     "test:time": "npm run build && node tests/time.electron.cjs",
     "test:transfer": "npm run build && node tests/planning-transfer.electron.cjs",
+    "test:weeks": "npm run build && node tests/weeks.electron.cjs",
     "test:updates": "npm run build && node tests/updates.electron.cjs",
     "preview:isolated": "electron . --user-data-dir=./out/preview-profile"
   },

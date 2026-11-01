@@ -1,6 +1,7 @@
 import type { AppData, Card, WindowBounds } from './types'
 import { isTimeUnit, toMinutes } from './time.ts'
 import { isThemeState } from './themes.ts'
+import { isWeek } from './weeks.ts'
 
 function isRange(min: unknown, max: unknown): boolean {
   return (
@@ -36,7 +37,8 @@ function isCard(value: unknown): value is Card {
     isTimeUnit(card.timeUnit) &&
     isRange(card.revenueMin, card.revenueMax) &&
     (card.currency === 'EUR' || card.currency === 'CHF') &&
-    typeof card.expanded === 'boolean'
+    typeof card.expanded === 'boolean' &&
+    (card.week === undefined || isWeek(card.week))
   )
 }
 

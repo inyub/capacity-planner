@@ -4,12 +4,14 @@ import { ThemeManager } from './ThemeManager'
 import { PlanningDataSettings } from './PlanningDataSettings'
 import { UpdateSettings } from './UpdateSettings'
 
-type SettingsView = 'themes' | 'data' | 'updates'
+type SettingsView = 'themes' | 'data' | 'updates' | 'view'
 
 export function SettingsDialog({
   initialView = 'themes',
   initialTheme,
   busy: appBusy,
+  weekGrouping,
+  onWeekGroupingChange,
   onImported,
   onSaveTheme,
   onClose
@@ -17,6 +19,8 @@ export function SettingsDialog({
   initialView?: SettingsView
   initialTheme?: ThemeState
   busy: boolean
+  weekGrouping: boolean
+  onWeekGroupingChange: (enabled: boolean) => void
   onImported: (data: AppData) => void
   onSaveTheme: (state: ThemeState) => Promise<boolean>
   onClose: () => void
@@ -68,7 +72,7 @@ export function SettingsDialog({
       <div className="settings-heading">
         <div>
           <h2 id="settings-title">Einstellungen</h2>
-          <p>Themes, Daten und Updates deiner Planung.</p>
+          <p>Themes, Daten, Updates und Ansicht deiner Planung.</p>
         </div>
         <button
           className="theme-close settings-close"
@@ -114,6 +118,17 @@ export function SettingsDialog({
           >
             Updates
           </button>
+          <button
+            type="button"
+            className="settings-nav-item"
+            aria-current={view === 'view' ? 'page' : undefined}
+            disabled={busy}
+            onClick={() => {
+              setView('view')
+            }}
+          >
+            Ansicht
+          </button>
         </nav>
         <section className="settings-content" aria-live="polite">
           <ThemeManager
@@ -123,6 +138,24 @@ export function SettingsDialog({
             onSave={onSaveTheme}
           />
           {view === 'updates' && <UpdateSettings onBusy={setUpdateBusy} />}
+          {view === 'view' && (
+            <div className="view-settings">
+              <h3>Ansicht</h3>
+              <label className="settings-check">
+                <input
+                  type="checkbox"
+                  name="weekGrouping"
+                  checked={weekGrouping}
+                  onChange={(event) => onWeekGroupingChange(event.target.checked)}
+                />
+                Karten nach Kalenderwochen gruppieren
+              </label>
+              <p className="settings-note">
+                Jeder Monat zeigt seine Kalenderwochen (z. B. „KW 45“) mit Wochensumme. Karten
+                lassen sich zwischen Wochen ziehen. Beim Ausschalten bleibt die Zuordnung erhalten.
+              </p>
+            </div>
+          )}
           {view === 'data' && (
             <PlanningDataSettings onImported={onImported} onBusy={setTransferBusy} />
           )}

@@ -4,12 +4,15 @@ import { PlannerCard } from './PlannerCard'
 
 export function SortableCard({
   card,
+  week,
   disabled,
   dragDisabled,
   onEdit,
   onToggle
 }: {
   card: Card
+  /** Week group the card is shown in; undefined without week grouping. */
+  week?: number | null
   disabled: boolean
   dragDisabled: boolean
   onEdit: () => void
@@ -18,7 +21,7 @@ export function SortableCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
     useSortable({
       id: card.id,
-      data: { month: card.month },
+      data: { type: 'card', month: card.month, week },
       disabled: dragDisabled
     })
   return (
@@ -37,6 +40,11 @@ export function SortableCard({
         // Buttons keep their existing click/focus behaviour and never activate a drag.
         if ((event.target as HTMLElement).closest('button, input, textarea, select, a')) return
         listeners?.onPointerDown?.(event)
+      }}
+      onDoubleClick={(event) => {
+        // Double-click opens the editor like the gear, but never from the card's own buttons.
+        if (disabled || (event.target as HTMLElement).closest('button')) return
+        onEdit()
       }}
       onKeyDown={(event) => {
         if (event.target === event.currentTarget) listeners?.onKeyDown?.(event)

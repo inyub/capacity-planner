@@ -27,5 +27,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: app/dist/*Setup.exe
+          path: |
+            app/dist/*Setup.exe
+            app/dist/latest.yml
           if-no-files-found: error

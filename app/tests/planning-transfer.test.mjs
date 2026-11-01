@@ -20,7 +20,7 @@ const card = {
 }
 
 test('planning round-trip preserves all fields across years and strips non-planning properties', () => {
-  const cards = [card, { ...card, id: 'two', year: 2027, month: 11, timeUnit: 'm' }]
+  const cards = [card, { ...card, id: 'two', year: 2027, month: 11, timeUnit: 'm', week: 49 }]
   const file = createPlanningFile(cards.map((c) => ({ ...c, appearance: {}, window: {} })))
   assert.deepEqual(Object.keys(file), ['format', 'formatVersion', 'dataVersion', 'cards'])
   assert.deepEqual(readPlanningFile(JSON.parse(JSON.stringify(file))), cards)
@@ -76,7 +76,8 @@ test('transfer rejects unsupported versions, wrong types, ranges, units, currenc
     revenueMin: [-1, 151, NaN],
     revenueMax: [0, Infinity],
     currency: ['USD', null],
-    expanded: ['false', 0]
+    expanded: ['false', 0],
+    week: [0, 54, 1.5, '45', null]
   }))
     for (const value of values)
       assert.throws(

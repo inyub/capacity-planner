@@ -200,7 +200,55 @@ export const DEFAULT_THEMES: PlannerTheme[] = [
       '#b2b6d0',
       '#ef9caa'
     )
-  )
+  ),
+  preset(
+    'napper',
+    'Napper',
+    palette(
+      '#14122b',
+      '#1e1b3d',
+      '#26234a',
+      '#100e22',
+      '#3a3670',
+      '#8b84f5',
+      '#f2f0ff',
+      '#aea9d6',
+      '#f29bb0'
+    )
+  ),
+  preset(
+    'erdgold',
+    'Erdgold',
+    palette(
+      '#1e1c1b',
+      '#1b2a3d',
+      '#243446',
+      '#161514',
+      '#1e5953',
+      '#d4a14a',
+      '#f2ede9',
+      '#b9b1a6',
+      '#e0716a'
+    )
+  ),
+  preset('cyberpunk-neon', 'Cyberpunk Neon', {
+    ...palette(
+      '#0b0716',
+      '#1a0b2e',
+      '#1f0f38',
+      '#06030d',
+      '#2e1450',
+      '#00f0ff',
+      '#f4ecff',
+      '#a593cc',
+      '#ff2e63'
+    ),
+    'accent-strong': '#ff2bd6',
+    'header-highlight': '#2d1152',
+    'line-light': '#4a2a7a',
+    scrollbar: '#ff2bd6',
+    'scrollbar-hover': '#00f0ff'
+  })
 ]
 
 const LEGACY_PRESETS: Record<string, { name: string; colors: ThemeColors }> = {
@@ -330,6 +378,20 @@ export function upgradePresetThemes(state: ThemeState): ThemeState {
     }
   })
   return changed ? { ...state, themes } : state
+}
+
+/** Adds presets that were introduced after the state was saved, keeping everything else. */
+export function addMissingPresetThemes(state: ThemeState): ThemeState {
+  const ids = new Set(state.themes.map((theme) => theme.id))
+  const missing = DEFAULT_THEMES.filter((preset) => !ids.has(preset.id))
+  if (missing.length === 0) return state
+  return {
+    ...state,
+    themes: [
+      ...state.themes,
+      ...missing.map((preset) => ({ ...preset, colors: { ...preset.colors } }))
+    ]
+  }
 }
 
 export function defaultThemeState(): ThemeState {

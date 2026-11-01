@@ -58,7 +58,11 @@ Alle 19 Farbvariablen einschließlich der Verlaufstöne können per Farbwähler 
 
 ## Ansicht
 
-Der Footer unterhalb der Jahresansicht stellt die globale Spaltenbreite von 180 bis 360 px ein. Standard und Reset sind 252 px. Der Regler lässt sich mit den Pfeiltasten bedienen und ist während Drag & Drop gesperrt. Bei schmalen Spalten stehen die Währung im Formular und die Summen bei Bedarf in einer weiteren Zeile. Monatstitel und Summen bleiben beim Scrollen stehen.
+Der Footer unterhalb der Jahresansicht stellt die globale Spaltenbreite von 180 bis 360 px ein. Standard und Reset sind 252 px. Statt Beschriftungen und Text-Buttons stehen vor beiden Reglern Icons; ein Klick auf das Icon setzt den jeweiligen Regler zurück. Der Regler lässt sich mit den Pfeiltasten bedienen und ist während Drag & Drop gesperrt. Im Formular stehen Zeit|Einheit und ~Umsatz|Währung in zwei gleichen Spalten; bei schmalen Spalten stehen die Summen bei Bedarf in einer weiteren Zeile. Monatstitel und Summen bleiben beim Scrollen stehen.
+
+Im Footer neben der Spaltenbreite skaliert ein zweiter Regler Schrift und textgebundene Feldhöhen von 80 bis 130 % (Standard 100 %, Schritte von 5 %). Alle Schriftgrößen laufen über die zentrale CSS-Variable `--ui-scale`; die Spaltenbreite bleibt davon unberührt. Der Wert wird lokal unter `capacity-planner:ui-scale` gespeichert, ungültige Werte fallen auf 100 % zurück.
+
+Ein Klick auf die Jahreszahl springt zum aktuellen Jahr; Pfeile und Mausrad wechseln wie bisher. Die Header-Steuerelemente erscheinen, sobald der Mauszeiger irgendwo über dem Header ist. Weil Ziehbereiche keine Mausereignisse an die Seite weitergeben, meldet der Hauptprozess die Zeigerposition (Abfrage alle 100 ms, gesendet nur bei Änderung). Im Kartenformular speichert Enter in einem einzeiligen Feld oder Auswahlfeld eine gültige Karte; im Beschreibungsfeld erzeugt Enter weiterhin eine neue Zeile.
 
 Spaltenbreite und zuletzt angezeigtes Jahr bleiben als lokale Ansichtspräferenzen im Electron-Profil nach einem Neustart erhalten. Der Reset ändert nur die Breite; Jahr, Karten und Themes bleiben erhalten. Diese Präferenzen stehen außerhalb von `data.json`, das Planungsdatenformat enthält diese Ansichtspräferenzen nicht.
 

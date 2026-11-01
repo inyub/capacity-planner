@@ -16,6 +16,9 @@ const DEFAULT_WIDTH = 1180
 const DEFAULT_HEIGHT = 760
 const MIN_WIDTH = 960
 const MIN_HEIGHT = 620
+// Matches --header-height in base.css.
+const HEADER_HEIGHT = 70
+const HEADER_POLL_MS = 100
 
 // Keep the development data location when installed. Explicit Chromium profiles also
 // allow a packaged build to be tested without reading or changing real planning data.
@@ -135,7 +138,24 @@ function createWindow(): void {
       app.quit()
     }
   })
+  // Drag regions swallow mouse events, so the renderer cannot see :hover over the empty header.
+  // The cursor is polled here and only changes are reported.
+  let pointerInHeader = false
+  const headerPoll = setInterval(() => {
+    if (!mainWindow || !mainWindow.isVisible() || mainWindow.isMinimized()) return
+    const cursor = screen.getCursorScreenPoint()
+    const area = mainWindow.getContentBounds()
+    const inside =
+      cursor.x >= area.x &&
+      cursor.x < area.x + area.width &&
+      cursor.y >= area.y &&
+      cursor.y < area.y + HEADER_HEIGHT
+    if (inside === pointerInHeader) return
+    pointerInHeader = inside
+    mainWindow.webContents.send('header:pointer', inside)
+  }, HEADER_POLL_MS)
   mainWindow.on('closed', () => {
+    clearInterval(headerPoll)
     mainWindow = null
   })
 

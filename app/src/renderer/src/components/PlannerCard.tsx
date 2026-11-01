@@ -72,7 +72,7 @@ export function PlannerCard({
         )}
         <div className="card-values">
           <span>{formatCardTime(card.minutesMin, card.minutesMax, card.timeUnit)}</span>
-          <span>
+          <span className="card-revenue">
             {formatRange(card.revenueMin, card.revenueMax)} {card.currency}
           </span>
         </div>

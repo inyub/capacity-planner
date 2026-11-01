@@ -141,6 +141,7 @@ if (!process.versions.electron) {
         invalid
       )
       await key('Return', ['control'])
+      await key('Return')
       assert.equal(saved().cards.length, 4)
     }
     for (const valid of ['0', '10-15', '1,5 - 2,5', '12.25', '10-10']) {
@@ -153,6 +154,7 @@ if (!process.versions.electron) {
     await fill('time', '10-15')
     await fill('description', 'Eine Zeile\nZweite Zeile')
     await fill('currency', 'CHF')
+    await js('document.querySelector("[name=description]").focus()')
     await key('Return')
     assert.equal(await js('!!document.querySelector(".card-form")'), true)
     // Two synchronous submissions must create exactly one card.
@@ -199,7 +201,8 @@ if (!process.versions.electron) {
     await click('[data-card-id="Buchsatz"] .card-settings')
     await fill('title', 'Überarbeitet')
     await fill('description', '')
-    await key('Return', ['control'])
+    await js('document.querySelector("[name=title]").focus()')
+    await key('Return')
     await waitFor('!document.querySelector(".card-form")')
     const edited = saved().cards.find((c) => c.id === 'Buchsatz')
     assert.equal(edited.title, 'Überarbeitet')

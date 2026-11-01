@@ -143,8 +143,13 @@ export function CardForm({
         } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
           event.preventDefault()
           void save()
-        } else if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+        } else if (
+          event.key === 'Enter' &&
+          (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)
+        ) {
+          // Enter in a single-line field saves a valid card; the description keeps its newlines.
           event.preventDefault()
+          void save()
         }
       }}
     >

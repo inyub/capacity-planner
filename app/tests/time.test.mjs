@@ -146,3 +146,12 @@ test('mixed units sum minutes componentwise and keep currencies separate', () =>
   assert.equal(formatDurationRange(...totals.minutes), '1d 3h 0m – 2d 3h 0m')
   assert.deepEqual(totals.revenue, { EUR: [150, 300], CHF: [450, 900] })
 })
+
+test('the optional calendar week loads unchanged; existing files without it stay valid', () => {
+  const migrated = migrateAppData({ version: 1, cards: [oldCard] })
+  assert.equal('week' in migrated.cards[0], false)
+  const withWeek = { ...migrated, cards: [{ ...migrated.cards[0], week: 6 }] }
+  assert.equal(migrateAppData(withWeek), withWeek)
+  for (const week of [0, 54, 2.5, '6', null])
+    assert.equal(isAppData({ ...migrated, cards: [{ ...migrated.cards[0], week }] }), false)
+})

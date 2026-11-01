@@ -23,7 +23,8 @@ function planningCard(card: Card): Card {
     revenueMin,
     revenueMax,
     currency,
-    expanded
+    expanded,
+    week
   } = card
   return {
     id,
@@ -39,7 +40,8 @@ function planningCard(card: Card): Card {
     revenueMin,
     revenueMax,
     currency,
-    expanded
+    expanded,
+    ...(week === undefined ? {} : { week })
   }
 }
 
@@ -57,7 +59,7 @@ export function readPlanningFile(value: unknown): Card[] {
   const data = migrateAppData({ version: source.dataVersion, cards: source.cards })
   if (!data) {
     throw new Error(
-      'Ungültige Karten: Bitte IDs (eindeutig), Jahr (1–9999), Monat (0–11), Reihenfolge, Textfelder, Zeit- und Umsatzbereiche sowie Einheiten (m/h/d) und Währungen (EUR/CHF) prüfen.'
+      'Ungültige Karten: Bitte IDs (eindeutig), Jahr (1–9999), Monat (0–11), Reihenfolge, Textfelder, Zeit- und Umsatzbereiche sowie Einheiten (m/h/d), Währungen (EUR/CHF) und Kalenderwochen (1–53) prüfen.'
     )
   }
   return data.cards.map(planningCard)

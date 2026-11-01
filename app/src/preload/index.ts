@@ -36,6 +36,13 @@ const capacityPlanner: CapacityPlannerApi = {
     return () => {
       ipcRenderer.removeListener('settings:open', handler)
     }
+  },
+  onHeaderPointer: (callback: (inside: boolean) => void): (() => void) => {
+    const handler = (_event: unknown, inside: unknown): void => callback(inside === true)
+    ipcRenderer.on('header:pointer', handler)
+    return () => {
+      ipcRenderer.removeListener('header:pointer', handler)
+    }
   }
 }
 

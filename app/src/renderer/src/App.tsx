@@ -11,10 +11,19 @@ import { YearBoard } from './components/YearBoard'
 import { moveCard } from '../../shared/card-order'
 import type { CardFields } from './components/CardForm'
 import { SettingsDialog } from './components/SettingsDialog'
-import { activeTheme, upgradePresetThemes } from '../../shared/themes'
+import { activeTheme, addMissingPresetThemes, upgradePresetThemes } from '../../shared/themes'
 import { applyTheme } from './applyTheme'
 import { readStoredYear } from './year'
-import { COLUMN_WIDTH_KEY, readColumnWidth } from './viewPreferences'
+import {
+  COLUMN_WIDTH_KEY,
+  readColumnWidth,
+  readUiScale,
+  readWeekGrouping,
+  UI_SCALE_KEY,
+  REVENUE_HIDDEN_KEY,
+  WEEK_GROUPING_KEY,
+  readRevenueHidden
+} from './viewPreferences'
 import { ViewToolbar } from './components/ViewToolbar'
 import { useKeyboardNavigation } from './useKeyboardNavigation'
 import { useViewPositionStore } from './useViewPosition'
@@ -43,6 +52,52 @@ function App(): React.JSX.Element {
     // The window never grows beyond the twelve month columns; a failure only leaves it wider.
     void window.capacityPlanner.setWindowWidthLimit(yearBoardWidth(columnWidth)).catch(() => {})
   }, [columnWidth])
+  const [uiScale, setUiScale] = useState(() => {
+    try {
+      return readUiScale(localStorage.getItem(UI_SCALE_KEY))
+    } catch {
+      return readUiScale(null)
+    }
+  })
+  useLayoutEffect(() => {
+    document.documentElement.style.setProperty('--ui-scale', String(uiScale / 100))
+    try {
+      localStorage.setItem(UI_SCALE_KEY, String(uiScale))
+    } catch {
+      // The scale still applies for this session.
+    }
+  }, [uiScale])
+  const [weekGrouping, setWeekGrouping] = useState(() => {
+    try {
+      return readWeekGrouping(localStorage.getItem(WEEK_GROUPING_KEY))
+    } catch {
+      return readWeekGrouping(null)
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem(WEEK_GROUPING_KEY, String(weekGrouping))
+    } catch {
+      // The grouping still applies for this session.
+    }
+  }, [weekGrouping])
+  const [revenueHidden, setRevenueHidden] = useState(() => {
+    try {
+      return readRevenueHidden(localStorage.getItem(REVENUE_HIDDEN_KEY))
+    } catch {
+      return readRevenueHidden(null)
+    }
+  })
+  useLayoutEffect(() => {
+    document.documentElement.toggleAttribute('data-revenue-hidden', revenueHidden)
+    try {
+      localStorage.setItem(REVENUE_HIDDEN_KEY, String(revenueHidden))
+    } catch {
+      // The setting still applies for this session.
+    }
+  }, [revenueHidden])
+  const [pointerInHeader, setPointerInHeader] = useState(false)
+  useEffect(() => window.capacityPlanner.onHeaderPointer(setPointerInHeader), [])
   const [year, setYear] = useState(() => {
     return readStoredYear(
       localStorage.getItem('capacity-planner:selected-year'),
@@ -60,7 +115,6 @@ function App(): React.JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [importRevision, setImportRevision] = useState(0)
   const [settingsView, setSettingsView] = useState<'themes' | 'data'>('themes')
-  const [yearMenuOpen, setYearMenuOpen] = useState(false)
 
   useLayoutEffect(() => {
     applyTheme(activeTheme(data?.appearance).colors)
@@ -107,7 +161,10 @@ function App(): React.JSX.Element {
       .then((loaded) => {
         if (active) {
           const upgraded = loaded.appearance
-            ? { ...loaded, appearance: upgradePresetThemes(loaded.appearance) }
+            ? {
+                ...loaded,
+                appearance: addMissingPresetThemes(upgradePresetThemes(loaded.appearance))
+              }
             : loaded
           dataRef.current = upgraded
           setData(upgraded)
@@ -188,7 +245,12 @@ function App(): React.JSX.Element {
     return saveChanges({ cards }, optimistic)
   }
 
-  function saveCard(fields: CardFields, month: number, card?: Card): Promise<boolean> {
+  function saveCard(
+    fields: CardFields,
+    month: number,
+    card?: Card,
+    week?: number
+  ): Promise<boolean> {
     const current = dataRef.current
     if (!current) return Promise.resolve(false)
     if (card) {
@@ -202,7 +264,15 @@ function App(): React.JSX.Element {
       current.cards
         .filter((existing) => existing.year === year && existing.month === month)
         .reduce((max, existing) => Math.max(max, existing.order), -1) + 1
-    const created: Card = { ...fields, id: crypto.randomUUID(), year, month, order, expanded: true }
+    const created: Card = {
+      ...fields,
+      id: crypto.randomUUID(),
+      year,
+      month,
+      order,
+      expanded: true,
+      ...(week === undefined ? {} : { week })
+    }
     return saveCards([...current.cards, created])
   }
 
@@ -211,20 +281,11 @@ function App(): React.JSX.Element {
   }
 
   const yearCards = (data?.cards ?? []).filter((card) => card.year === year)
-  const calendarYear = new Date().getFullYear()
-  const oldestYear =
-    data?.cards.reduce((oldest, card) => Math.min(oldest, card.year), calendarYear) ?? calendarYear
-  const firstYear = Math.max(1, Math.min(oldestYear, calendarYear) - 1)
-  const lastYear = Math.min(9999, Math.max(calendarYear, year) + 1)
-  const yearOptions = Array.from(
-    { length: lastYear - firstYear + 1 },
-    (_, index) => firstYear + index
-  )
 
   return (
     <main className="app-shell" style={{ '--column-width': `${columnWidth}px` } as CSSProperties}>
       <header
-        className="planner-header"
+        className={pointerInHeader ? 'planner-header is-pointer-inside' : 'planner-header'}
         onContextMenu={(event) => {
           event.preventDefault()
           void window.capacityPlanner.showHeaderMenu()
@@ -284,44 +345,23 @@ function App(): React.JSX.Element {
               <path d="M10.5 3 4 8l6.5 5Z" />
             </svg>
           </button>
-          <div className="year-picker">
-            <button
-              className="selected-year"
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded={yearMenuOpen}
-              aria-label="Jahr auswählen"
-              title="Mausrad: Jahr wechseln"
-              onClick={() => setYearMenuOpen((open) => !open)}
-              onWheel={(event) => {
-                const gestureStart = event.timeStamp - wheelGestureAt.current > WHEEL_GESTURE_GAP_MS
-                wheelGestureAt.current = event.timeStamp
-                if (!gestureStart || event.deltaY === 0 || busy || dragging) return
-                shiftYear(Math.sign(event.deltaY))
-              }}
-            >
-              {year}
-            </button>
-            {yearMenuOpen && (
-              <div className="year-menu" role="listbox" aria-label="Jahre">
-                {yearOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    role="option"
-                    aria-selected={option === year}
-                    className={option === year ? 'is-selected' : undefined}
-                    onClick={() => {
-                      setYear(option)
-                      setYearMenuOpen(false)
-                    }}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            className="selected-year"
+            type="button"
+            aria-label={`Jahr ${year}, zum aktuellen Jahr wechseln`}
+            title="Klick: aktuelles Jahr · Mausrad: Jahr wechseln"
+            onClick={() => {
+              if (!busy && !dragging) setYear(new Date().getFullYear())
+            }}
+            onWheel={(event) => {
+              const gestureStart = event.timeStamp - wheelGestureAt.current > WHEEL_GESTURE_GAP_MS
+              wheelGestureAt.current = event.timeStamp
+              if (!gestureStart || event.deltaY === 0 || busy || dragging) return
+              shiftYear(Math.sign(event.deltaY))
+            }}
+          >
+            {year}
+          </button>
           <button
             className="header-control year-arrow"
             onClick={() => shiftYear(1)}
@@ -397,23 +437,30 @@ function App(): React.JSX.Element {
         onToggle={toggleDescription}
         onSave={saveCard}
         onDelete={deleteCard}
-        onMove={(id, month, index) => {
+        weekGrouping={weekGrouping}
+        onMove={(id, month, index, week) => {
           const current = dataRef.current
           if (!current || busyRef.current) return
-          const cards = moveCard(current.cards, year, id, month, index)
+          const cards = moveCard(current.cards, year, id, month, index, week)
           if (cards !== current.cards) void saveCards(cards, true)
         }}
       />
       <ViewToolbar
         year={year}
         revenue={monthTotals(yearCards).revenue}
+        revenueHidden={revenueHidden}
+        onRevenueHiddenChange={setRevenueHidden}
         width={columnWidth}
+        scale={uiScale}
+        onScaleChange={setUiScale}
         onChange={setColumnWidth}
         disabled={dragging}
       />
       {settingsOpen && (
         <SettingsDialog
           initialView={settingsView}
+          weekGrouping={weekGrouping}
+          onWeekGroupingChange={setWeekGrouping}
           initialTheme={data?.appearance}
           busy={busy}
           onImported={(loaded) => {

@@ -18,6 +18,7 @@ import type { CardFields } from './CardForm'
 import { MonthColumn } from './MonthColumn'
 import { PlannerCard } from './PlannerCard'
 import { useBoardAutoScroll } from '../useBoardAutoScroll'
+import { cardWeek, groupByWeek, monthWeeks } from '../../../shared/weeks'
 import type { ViewPositionStore } from '../useViewPosition'
 
 const MONTHS = [
@@ -55,16 +56,32 @@ const monthCollision: CollisionDetection = (args) => {
   if (!hit) return []
   const month = args.droppableContainers.find((container) => container.id === hit.id)?.data.current
     ?.month
+  const weeks = args.droppableContainers.filter(
+    (container) =>
+      container.data.current?.type === 'week' && container.data.current?.month === month
+  )
+  // With week grouping the week under the pointer (or the nearest one) is the target list.
+  const week = weeks.length
+    ? (pointerWithin({ ...args, droppableContainers: weeks })[0] ??
+      closestCenter({ ...args, droppableContainers: weeks })[0])
+    : undefined
+  const weekKey = week
+    ? args.droppableContainers.find((container) => container.id === week.id)?.data.current?.week
+    : undefined
   const items = args.droppableContainers.filter(
     (container) =>
-      container.data.current?.type !== 'month' && container.data.current?.month === month
+      container.data.current?.type === 'card' &&
+      container.data.current?.month === month &&
+      (!week || container.data.current?.week === weekKey)
   )
   // Blank space after the last card is an explicit append target.
   const belowAll = items.every((item) => {
     const rect = args.droppableRects.get(item.id)
     return !rect || point.y > rect.bottom
   })
-  return items.length && !belowAll ? closestCenter({ ...args, droppableContainers: items }) : [hit]
+  return items.length && !belowAll
+    ? closestCenter({ ...args, droppableContainers: items })
+    : [week ?? hit]
 }
 
 export function YearBoard({
@@ -77,7 +94,8 @@ export function YearBoard({
   onToggle,
   onSave,
   onDelete,
-  onMove
+  onMove,
+  weekGrouping
 }: {
   year: number
   cards: Card[]
@@ -86,9 +104,10 @@ export function YearBoard({
   viewPosition: ViewPositionStore
   onDraggingChange: (dragging: boolean) => void
   onToggle: (id: string) => void
-  onSave: (fields: CardFields, month: number, card?: Card) => Promise<boolean>
+  onSave: (fields: CardFields, month: number, card?: Card, week?: number) => Promise<boolean>
   onDelete: (id: string) => Promise<boolean>
-  onMove: (id: string, month: number, index: number) => void
+  onMove: (id: string, month: number, index: number, week?: number | null) => void
+  weekGrouping: boolean
 }): React.JSX.Element {
   const board = useRef<HTMLDivElement>(null)
   // Runs once the cards exist, because a scroll position cannot be restored into empty columns.
@@ -121,16 +140,29 @@ export function YearBoard({
     if (!over || busy || !active || active.year !== year) return
     const month = over.data.current?.month as number | undefined
     if (month === undefined) return
-    const destination = cards
-      .filter((card) => card.month === month)
-      .sort((a, b) => a.order - b.order)
+    const monthCards = cards.filter((card) => card.month === month)
+    let week: number | null | undefined
+    let destination: Card[]
+    let sameList = month === active.month
+    if (weekGrouping) {
+      const weeks = monthWeeks(year, month)
+      // A drop on the month itself (no week hit) appends to the last week of the month.
+      week =
+        over.data.current?.type === 'month'
+          ? weeks[weeks.length - 1].week
+          : (over.data.current?.week as number | null)
+      destination = groupByWeek(monthCards, weeks).find((group) => group.week === week)!.cards
+      sameList &&= cardWeek(active, weeks) === week
+    } else {
+      destination = monthCards.sort((a, b) => a.order - b.order)
+    }
     const targetIndex = destination.findIndex((card) => card.id === over.id)
     let index = targetIndex < 0 ? destination.length : targetIndex
-    if (month !== active.month && targetIndex >= 0) {
+    if (!sameList && targetIndex >= 0) {
       const y = pointerRef.current?.y ?? over.rect.top
       if (y > over.rect.top + over.rect.height / 2) index++
     }
-    onMove(String(dragged.id), month, index)
+    onMove(String(dragged.id), month, index, week)
   }
   return (
     <DndContext
@@ -146,7 +178,13 @@ export function YearBoard({
         announcements: {
           onDragStart: () => 'Karte aufgenommen.',
           onDragOver: ({ over }) =>
-            over ? `Ziel: ${MONTHS[over.data.current?.month]}.` : 'Außerhalb der Monatslisten.',
+            over
+              ? `Ziel: ${MONTHS[over.data.current?.month]}${
+                  typeof over.data.current?.week === 'number'
+                    ? `, KW ${over.data.current.week}`
+                    : ''
+                }.`
+              : 'Außerhalb der Monatslisten.',
           onDragEnd: ({ over }) => (over ? 'Karte abgelegt.' : 'Verschieben abgebrochen.'),
           onDragCancel: () => 'Verschieben abgebrochen.'
         }
@@ -190,9 +228,10 @@ export function YearBoard({
             busy={busy}
             dragging={active !== null}
             ready={ready}
-            onSave={(fields, card) => onSave(fields, index, card)}
+            onSave={(fields, card, week) => onSave(fields, index, card, week)}
             onDelete={onDelete}
             onScrollTop={(top) => viewPosition.setColumnTop(index, top)}
+            weekGrouping={weekGrouping}
           />
         ))}
       </div>

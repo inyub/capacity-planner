@@ -40,13 +40,13 @@
 }
 .settings-heading h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: calc(20px * var(--ui-scale));
   font-weight: 600;
 }
 .settings-heading p {
   margin: 5px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
 }
 .settings-layout {
   display: flex;
@@ -88,12 +88,12 @@
 }
 .settings-placeholder > h3 {
   margin: 0 0 8px;
-  font-size: 16px;
+  font-size: calc(16px * var(--ui-scale));
 }
 .settings-placeholder > p {
   margin: 0 0 16px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
   line-height: 1.5;
 }
 .settings-placeholder {
@@ -124,6 +124,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  /* The × is an icon inside a fixed box, so it does not follow the UI scale. */
   font-size: 25px;
 }
 .theme-close:hover {
@@ -149,7 +150,7 @@
   border-radius: var(--radius-control);
   background: var(--field);
   cursor: pointer;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
 }
 .theme-button:hover:enabled {
   border-color: var(--accent);
@@ -179,7 +180,7 @@
 }
 .theme-select-label {
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--ui-scale));
 }
 .theme-select {
   flex: 1;
@@ -192,7 +193,7 @@
   background: var(--field);
   color: var(--text);
   font: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
   cursor: pointer;
 }
 .theme-select {
@@ -230,7 +231,7 @@
   flex: 1;
   min-width: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--ui-scale));
 }
 .theme-manager input:not([type='color']) {
   min-width: 0;
@@ -241,7 +242,7 @@
   background: var(--field);
   color: var(--text);
   font: inherit;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-scale));
 }
 .theme-name input {
   display: block;
@@ -271,7 +272,7 @@
 .theme-preview-label {
   grid-column: 1 / -1;
   color: var(--muted);
-  font-size: 10px;
+  font-size: calc(10px * var(--ui-scale));
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -281,12 +282,12 @@
 .theme-preview p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--ui-scale));
   line-height: 1.5;
 }
 .theme-colors-title {
   margin: 0 0 14px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-scale));
   font-weight: 600;
 }
 .theme-colors {
@@ -301,7 +302,7 @@
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--ui-scale));
 }
 .theme-color > div {
   display: flex;
@@ -337,7 +338,7 @@
 .theme-actions p {
   margin: 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: calc(11px * var(--ui-scale));
   line-height: 1.5;
 }
 .theme-actions .form-error {

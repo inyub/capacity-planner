@@ -1,5 +1,5 @@
-export const DEFAULT_COLUMN_WIDTH = 252
-export const MIN_COLUMN_WIDTH = 180
+export const DEFAULT_COLUMN_WIDTH = 250
+export const MIN_COLUMN_WIDTH = 100
 export const MAX_COLUMN_WIDTH = 360
 export const COLUMN_WIDTH_KEY = 'capacity-planner:column-width'
 
@@ -11,6 +11,38 @@ export function readColumnWidth(value: string | null): number {
     width <= MAX_COLUMN_WIDTH
     ? width
     : DEFAULT_COLUMN_WIDTH
+}
+
+// UI scale in percent; it multiplies font sizes and text-bound control heights, not column width.
+export const DEFAULT_UI_SCALE = 100
+export const MIN_UI_SCALE = 50
+export const MAX_UI_SCALE = 150
+export const UI_SCALE_STEP = 5
+export const UI_SCALE_KEY = 'capacity-planner:ui-scale'
+
+export function readUiScale(value: string | null): number {
+  const scale = Number(value)
+  return value !== null &&
+    Number.isInteger(scale) &&
+    scale >= MIN_UI_SCALE &&
+    scale <= MAX_UI_SCALE &&
+    scale % UI_SCALE_STEP === 0
+    ? scale
+    : DEFAULT_UI_SCALE
+}
+
+// Calendar-week grouping inside the month columns; off unless explicitly stored as on.
+export const WEEK_GROUPING_KEY = 'capacity-planner:week-grouping'
+
+export function readWeekGrouping(value: string | null): boolean {
+  return value === 'true'
+}
+
+// Blurs every revenue figure; off unless explicitly stored as on.
+export const REVENUE_HIDDEN_KEY = 'capacity-planner:revenue-hidden'
+
+export function readRevenueHidden(value: string | null): boolean {
+  return value === 'true'
 }
 
 export const VIEW_POSITION_KEY = 'capacity-planner:view-position'
